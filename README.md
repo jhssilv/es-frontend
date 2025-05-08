@@ -8,6 +8,13 @@
 - [ ] Organizar env
 
 ## Como usar
+
+Instalar dependências dentro do repo
+```bash
+npm install
+```
+
+Rodar demonstração
 ```bash
 npm run dev # http://localhost:5173/
 ```
