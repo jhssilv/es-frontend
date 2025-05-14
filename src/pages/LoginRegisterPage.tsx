@@ -1,8 +1,20 @@
 import React, { useState, type ChangeEvent } from 'react';
-import { Container, Box, TextField, Button, Tabs, Tab } from '@mui/material';
+import { 
+  Container, 
+  Box, 
+  TextField, 
+  Button, 
+  Tabs, 
+  Tab, 
+  Alert,
+  Typography 
+} from '@mui/material';
+import axios from 'axios';
+import { useAuth } from '../components/functions/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 interface FormState {
-  name?: string;
+  name: string;
   email: string;
   password: string;
 }
@@ -10,11 +22,16 @@ interface FormState {
 const LoginRegisterPage: React.FC = () => {
   const [tab, setTab] = useState<number>(0);
   const [form, setForm] = useState<FormState>({ name: '', email: '', password: '' });
+  const [error, setError] = useState<string>('');
+  const [successMessage, setSuccessMessage] = useState<string>('');
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setTab(newValue);
-    // Reset form on tab switch
     setForm({ name: '', email: '', password: '' });
+    setError('');
+    setSuccessMessage('');
   };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -22,14 +39,54 @@ const LoginRegisterPage: React.FC = () => {
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (tab === 0) {
-      // TODO: Implement login logic
-      console.log('Logging in with', { email: form.email, password: form.password });
-    } else {
-      // TODO: Implement registration logic
-      console.log('Registering with', form);
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setError('');
+    
+    try {
+      if (tab === 0) {
+        // Login handling
+        const res = await axios.post('/auth/login', {
+          email: form.email,
+          password: form.password,
+        });
+
+        if (res.status === 200) {
+          await login({
+            id: res.data.id, 
+            name: form.name, 
+            email: form.email,
+            role: res.data.role, 
+          }, res.data.token);
+          navigate('/main');
+        }
+      } else {
+        // Registration handling
+        const res = await axios.post('/auth/signup', {
+          name: form.name,
+          email: form.email,
+          password: form.password,
+          confirmPassword: form.password,
+          role: "STUDENT"
+        });
+
+        if (res.status === 201) {
+          setSuccessMessage('Registration successful!');
+          setForm({ name: '', email: '', password: '' });
+        }
+      }
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        if (err.response?.status === 401) {
+          setError('Invalid email or password');
+        } else if (err.response?.status === 409) {
+          setError('Email is already registered');
+        } else {
+          setError('An error occurred. Please try again.');
+        }
+      } else {
+        setError('An unexpected error occurred');
+      }
     }
   };
 
@@ -42,6 +99,32 @@ const LoginRegisterPage: React.FC = () => {
         </Tabs>
 
         <Box component="form" onSubmit={handleSubmit} mt={3}>
+          {/* Error Message */}
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+
+          {/* Success Message */}
+          {successMessage && (
+            <Alert 
+              severity="success" 
+              action={
+                <Button 
+                  color="inherit" 
+                  size="small"
+                  onClick={() => handleTabChange(null as any, 0)}
+                >
+                  Go to Login
+                </Button>
+              }
+              sx={{ mb: 2 }}
+            >
+              {successMessage}
+            </Alert>
+          )}
+
           {tab === 1 && (
             <TextField
               name="name"
@@ -85,6 +168,18 @@ const LoginRegisterPage: React.FC = () => {
             {tab === 0 ? 'Login' : 'Register'}
           </Button>
         </Box>
+
+        {/* Additional links or info */}
+        <Typography variant="body2" align="center" sx={{ mt: 2 }}>
+          {tab === 0 ? "Don't have an account?" : "Already have an account?"}
+          <Button 
+            size="small" 
+            onClick={() => handleTabChange(null as any, tab === 0 ? 1 : 0)}
+            sx={{ ml: 1 }}
+          >
+            {tab === 0 ? 'Register here' : 'Login here'}
+          </Button>
+        </Typography>
       </Box>
     </Container>
   );
