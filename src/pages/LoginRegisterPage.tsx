@@ -51,11 +51,13 @@ const LoginRegisterPage: React.FC = () => {
           password: form.password,
         });
 
+        console.log(res);
+
         if (res.status === 200) {
           await login({
             id: res.data.id, 
-            name: form.name, 
-            email: form.email,
+            name: res.data.name, 
+            email: res.data.email,
             role: res.data.role, 
           }, res.data.token);
           navigate('/main');
