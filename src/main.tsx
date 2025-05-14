@@ -5,6 +5,7 @@ import { ThemeProvider, CssBaseline } from '@mui/material'
 import { getTheme } from './themes'
 import axios from 'axios';
 axios.defaults.baseURL = 'http://localhost:3000'
+import './index.css';
 
 // Context
 import { AuthProvider } from './components/AuthContext';

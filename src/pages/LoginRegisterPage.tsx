@@ -78,14 +78,14 @@ const LoginRegisterPage: React.FC = () => {
     } catch (err) {
       if (axios.isAxiosError(err)) {
         if (err.response?.status === 401) {
-          setError('Invalid email or password');
+          setError('Email ou senha inválidos.');
         } else if (err.response?.status === 409) {
-          setError('Email is already registered');
+          setError('Email já registrado.');
         } else {
-          setError('An error occurred. Please try again.');
+          setError('Um erro ocorreu. Tente novamente.');
         }
       } else {
-        setError('An unexpected error occurred');
+        setError('Um erro inesperado ocorreu!');
       }
     }
   };
@@ -95,7 +95,7 @@ const LoginRegisterPage: React.FC = () => {
       <Box mt={8}>
         <Tabs value={tab} onChange={handleTabChange} centered>
           <Tab label="Login" />
-          <Tab label="Register" />
+          <Tab label="Registrar" />
         </Tabs>
 
         <Box component="form" onSubmit={handleSubmit} mt={3}>
@@ -114,9 +114,9 @@ const LoginRegisterPage: React.FC = () => {
                 <Button 
                   color="inherit" 
                   size="small"
-                  onClick={() => handleTabChange(null as any, 0)}
+                  onClick={() => handleTabChange(null as unknown as React.SyntheticEvent, 0)}
                 >
-                  Go to Login
+                  Ir para o login
                 </Button>
               }
               sx={{ mb: 2 }}
@@ -128,7 +128,7 @@ const LoginRegisterPage: React.FC = () => {
           {tab === 1 && (
             <TextField
               name="name"
-              label="Name"
+              label="Nome"
               value={form.name}
               onChange={handleChange}
               fullWidth
@@ -150,7 +150,7 @@ const LoginRegisterPage: React.FC = () => {
 
           <TextField
             name="password"
-            label="Password"
+            label="Senha"
             type="password"
             value={form.password}
             onChange={handleChange}
@@ -165,19 +165,19 @@ const LoginRegisterPage: React.FC = () => {
             fullWidth
             sx={{ mt: 2 }}
           >
-            {tab === 0 ? 'Login' : 'Register'}
+            {tab === 0 ? 'Login' : 'Registrar'}
           </Button>
         </Box>
 
         {/* Additional links or info */}
         <Typography variant="body2" align="center" sx={{ mt: 2 }}>
-          {tab === 0 ? "Don't have an account?" : "Already have an account?"}
+          {tab === 0 ? "Não tem uma conta?" : "Já possui uma conta?"}
           <Button 
             size="small" 
-            onClick={() => handleTabChange(null as any, tab === 0 ? 1 : 0)}
+            onClick={() => handleTabChange(null as unknown as React.SyntheticEvent, tab === 0 ? 1 : 0)}
             sx={{ ml: 1 }}
           >
-            {tab === 0 ? 'Register here' : 'Login here'}
+            {tab === 0 ? 'Registre-se aqui' : 'Fazer login aqui'}
           </Button>
         </Typography>
       </Box>
