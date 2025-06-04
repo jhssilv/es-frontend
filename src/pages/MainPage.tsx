@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+
 import AppBar         from '@mui/material/AppBar';
 import Box            from '@mui/material/Box';
 import CssBaseline    from '@mui/material/CssBaseline';
@@ -22,33 +23,34 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 
 import { useAuth } from '../components/functions/useAuth';
+import type { MenuItemData } from '../types/MenuItemData';
 
 const drawerWidth = 240;
 
-const menuItems = [
-  { text: 'Home', icon: <HomeIcon /> },
-  { text: 'Meus Livros', icon: <BookIcon /> },
-  { text: 'Conta', icon: <AccountIcon /> },
-  { text: 'Contatos', icon: <ContactsIcon /> },
-  { text: 'Configurações', icon: <SettingsIcon /> },
-  { text: 'Logout', icon: <LogoutIcon /> },
-];
-
 const MainPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [mobileOpen, setMobileOpen] = useState(false);
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 
+    const menuItems: MenuItemData[] = [
+    { text: 'Home', icon: <HomeIcon /> },
+    { text: 'Meus Livros', icon: <BookIcon /> },
+    { text: 'Conta', icon: <AccountIcon /> },
+    { text: 'Contatos', icon: <ContactsIcon /> },
+    { text: 'Configurações', icon: <SettingsIcon /> },
+    { text: 'Logout', icon: <LogoutIcon />, effect: logout},
+  ];
+
   const drawer = (
     <div>
       <Toolbar />
       <Divider />
       <List>
-        {menuItems.map(({ text, icon }) => (
-          <ListItem component="button" key={text}>
+        {menuItems.map(({ text, icon, effect }) => (
+          <ListItem component="button" key={text} onClick={effect ? () => effect() : undefined}>
             <ListItemIcon>{icon}</ListItemIcon>
             <ListItemText primary={text} />
           </ListItem>
