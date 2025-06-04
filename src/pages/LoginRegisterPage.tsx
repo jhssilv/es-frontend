@@ -1,14 +1,12 @@
 import React, { useState, type ChangeEvent } from 'react';
-import { 
-  Container, 
-  Box, 
-  TextField, 
-  Button, 
-  Tabs, 
-  Tab, 
-  Alert,
-  Typography 
-} from '@mui/material';
+import Container  from '@mui/material/Container';
+import Box        from '@mui/material/Box';
+import TextField  from '@mui/material/TextField';
+import Button     from '@mui/material/Button';
+import Tabs       from '@mui/material/Tabs';
+import Tab        from '@mui/material/Tab';
+import Alert      from '@mui/material/Alert';
+import Typography from '@mui/material/Typography';
 import axios from 'axios';
 import { useAuth } from '../components/functions/useAuth';
 import { useNavigate } from 'react-router-dom';
