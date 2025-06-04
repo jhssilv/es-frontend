@@ -27,6 +27,8 @@ import LogoutIcon   from '@mui/icons-material/Logout';
 import { useAuth } from '../components/functions/useAuth';
 import type { MenuItemData, PageKey } from '../types/MenuItemData';
 
+import MeusLivrosPage from './MeusLivrosPage';
+
 const drawerWidth = 240;
 
 const MainPage: React.FC = () => {
@@ -97,8 +99,9 @@ const MainPage: React.FC = () => {
     switch (selectedPage) {
       case 'Home':
         //return <HomePage />;
+        break; // Tirar quando for adicionado a HomePage
       case 'Meus Livros':
-        //return <MeusLivrosPage />;
+        return <MeusLivrosPage />;
       case 'Conta':
         //return <ContaPage />;
       case 'Contatos':
