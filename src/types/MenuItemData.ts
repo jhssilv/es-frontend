@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 export type PageKey =
-  | 'Home'
+  | 'Pesquisar'
   | 'Meus Livros'
   | 'Conta'
   | 'Contatos'

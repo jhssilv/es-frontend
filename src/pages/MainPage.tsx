@@ -1,33 +1,42 @@
 import React, { useState } from 'react';
 
-import AppBar       from '@mui/material/AppBar';
-import Box          from '@mui/material/Box';
-import CssBaseline  from '@mui/material/CssBaseline';
-import Divider      from '@mui/material/Divider';
-import Drawer       from '@mui/material/Drawer';
-import IconButton   from '@mui/material/IconButton';
-import List         from '@mui/material/List';
-import ListItem     from '@mui/material/ListItem';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Toolbar      from '@mui/material/Toolbar';
-import Typography   from '@mui/material/Typography';
-import { useTheme } from '@mui/material/styles';
-import useMediaQuery from '@mui/material/useMediaQuery';
+import AppBar         from '@mui/material/AppBar';
+import Box            from '@mui/material/Box';
+import CssBaseline    from '@mui/material/CssBaseline';
+import Divider        from '@mui/material/Divider';
+import Drawer         from '@mui/material/Drawer';
+import IconButton     from '@mui/material/IconButton';
+import List           from '@mui/material/List';
+import ListItem       from '@mui/material/ListItem';
+import ListItemIcon   from '@mui/material/ListItemIcon';
+import ListItemText   from '@mui/material/ListItemText';
+import Toolbar        from '@mui/material/Toolbar';
+import Typography     from '@mui/material/Typography';
+import Button         from '@mui/material/Button';
+import Dialog         from '@mui/material/Dialog';
+import DialogActions  from '@mui/material/DialogActions';
+import DialogContent  from '@mui/material/DialogContent';
+import DialogContentText from '@mui/material/DialogContentText';
+import DialogTitle    from '@mui/material/DialogTitle';
+import { useTheme }   from '@mui/material/styles';
+import useMediaQuery  from '@mui/material/useMediaQuery';
 import { ListItemButton } from '@mui/material';
 
 import MenuIcon     from '@mui/icons-material/Menu';
-import HomeIcon     from '@mui/icons-material/Home';
+import SearchIcon   from '@mui/icons-material/Search';
 import BookIcon     from '@mui/icons-material/Book';
 import AccountIcon  from '@mui/icons-material/AccountCircle';
 import ContactsIcon from '@mui/icons-material/Contacts';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon   from '@mui/icons-material/Logout';
 
-import { useAuth } from '../components/functions/useAuth';
+import { useAuth }  from '../components/functions/useAuth';
 import type { MenuItemData, PageKey } from '../types/MenuItemData';
 
 import MeusLivrosPage from './MeusLivrosPage';
+import PesquisarPage  from './PesquisarPage';
+import ContatosPage   from './ContatosPage';
+import ConfiguracoesPage from './ConfiguracoesPage';
 
 const drawerWidth = 240;
 
@@ -35,12 +44,8 @@ const MainPage: React.FC = () => {
   const { user, logout } = useAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-
-  /** 
-   * Aqui fica o estado que determina qual “página” está ativa. 
-   * Inicialmente, vamos mostrar "Home"
-   */
-  const [selectedPage, setSelectedPage] = useState<PageKey>('Home');
+  const [isLogoutModalOpen, setLogoutModalOpen] = useState(false);
+  const [selectedPage, setSelectedPage] = useState<PageKey>('Pesquisar');
 
   /** Controle de abertura do drawer em mobile */
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -53,12 +58,12 @@ const MainPage: React.FC = () => {
    *   e então faremos setSelectedPage(text).
    */
   const menuItems: MenuItemData[] = [
-    { text: 'Home',         icon: <HomeIcon /> },
+    { text: 'Pesquisar',    icon: <SearchIcon /> },
     { text: 'Meus Livros',  icon: <BookIcon /> },
     { text: 'Conta',        icon: <AccountIcon /> },
     { text: 'Contatos',     icon: <ContactsIcon /> },
     { text: 'Configurações',icon: <SettingsIcon /> },
-    { text: 'Logout',       icon: <LogoutIcon />, effect: logout },
+    { text: 'Logout',       icon: <LogoutIcon />, effect: () => setLogoutModalOpen(true) },
   ];
 
   /** Este bloco renderiza o conteúdo do drawer (menu lateral). */
@@ -97,18 +102,17 @@ const MainPage: React.FC = () => {
    */
   function renderPageContent() {
     switch (selectedPage) {
-      case 'Home':
-        //return <HomePage />;
-        break; // Tirar quando for adicionado a HomePage
+      case 'Pesquisar':
+        return <PesquisarPage />;
       case 'Meus Livros':
         return <MeusLivrosPage />;
       case 'Conta':
         //return <ContaPage />;
+        break;
       case 'Contatos':
-        //return <ContatosPage />;
+        return <ContatosPage />;
       case 'Configurações':
-        //return <ConfiguracoesPage />;
-      // O caso 'Logout' não deve aparecer aqui porque executamos logout() acima.
+        return <ConfiguracoesPage />;
       default:
         return <Typography>Ops… página desconhecida</Typography>;
     }
@@ -195,14 +199,44 @@ const MainPage: React.FC = () => {
       >
         {/* Cabeçalho fixo (pode variar conforme a página). */}
         <Typography variant="h4" gutterBottom>
-          {selectedPage === 'Logout'
-            ? 'Saindo…'
-            : `Bem-vindo ao Vira a Página — ${selectedPage}`}
+          {selectedPage}
         </Typography>
 
         {/* Aqui injetamos o componente correto de acordo com selectedPage */}
         {renderPageContent()}
       </Box>
+
+      {/* MODAL DE CONFIRMAÇÃO DE LOGOUT */}
+      <Dialog
+        open={isLogoutModalOpen}
+        onClose={() => setLogoutModalOpen(false)} // Permite fechar clicando fora
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          {"Confirmar Logout"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            Você tem certeza que deseja sair da sua conta?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setLogoutModalOpen(false)} color="primary">
+            Cancelar
+          </Button>
+          <Button 
+            onClick={() => {
+              setLogoutModalOpen(false); // Fecha o modal
+              logout(); // Executa o logout
+            }} 
+            color="error" 
+            autoFocus
+          >
+            Sair
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
