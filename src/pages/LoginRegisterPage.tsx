@@ -58,7 +58,9 @@ const LoginRegisterPage: React.FC = () => {
             email: res.data.email,
             role: res.data.role, 
           }, res.data.token);
-          navigate('/main');
+
+          console.log(res.data.role);
+          res.data.role !== 'STUDENT' ? navigate('/moderator') : navigate('/main');
         }
       } else {
         // Registration handling

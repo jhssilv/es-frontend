@@ -13,8 +13,9 @@ import { AuthProvider } from './components/AuthContext';
 import { ConfigProvider, ConfigContext, type Config } from './components/ConfigContext' // Import ConfigContext and Config type
 
 // Routes
-import LoginRegisterPage from './pages/LoginRegisterPage'
-import MainPage from './pages/MainPage'
+import LoginRegisterPage from './pages/LoginRegisterPage';
+import MainPage from './pages/MainPage';
+import ModeratorPage from './pages/ModeratorPage';
 
 // Route protection
 import ProtectedRoute from './components/ProtectedRoute';
@@ -41,7 +42,15 @@ function App() {
                       <MainPage />
                   </ProtectedRoute>
               }
-          />       
+          />
+          <Route
+              path="/moderator"
+              element={
+                  <ProtectedRoute>
+                      <ModeratorPage />
+                  </ProtectedRoute>
+              }
+          />        
         </Routes>
       </Router>
     </ThemeProvider>
