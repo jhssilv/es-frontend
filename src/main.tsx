@@ -14,6 +14,7 @@ import { ConfigProvider, ConfigContext, type Config } from './components/ConfigC
 
 // Routes
 import LoginRegisterPage from './pages/LoginRegisterPage';
+import LoginModeratorPage from './pages/LoginModeratorPage';
 import MainPage from './pages/MainPage';
 import ModeratorPage from './pages/ModeratorPage';
 
@@ -35,6 +36,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Navigate replace to="/login" />} />
           <Route path="/login" element={<LoginRegisterPage />} />
+          <Route path="/loginmod" element={<LoginModeratorPage />} />
           <Route
               path="/main"
               element={

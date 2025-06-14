@@ -47,6 +47,7 @@ const LoginRegisterPage: React.FC = () => {
         const res = await axios.post('/auth/login', {
           email: form.email,
           password: form.password,
+          isMod: false 
         });
 
         console.log(res);
@@ -95,6 +96,9 @@ const LoginRegisterPage: React.FC = () => {
   return (
     <Container maxWidth="xs">
       <Box mt={8}>
+        <Typography variant = "h4">
+          Bem-vindo(a) ao Vira a Página!
+        </Typography>
         <Tabs value={tab} onChange={handleTabChange} centered>
           <Tab label="Login" />
           <Tab label="Registrar" />
@@ -180,6 +184,16 @@ const LoginRegisterPage: React.FC = () => {
             sx={{ ml: 1 }}
           >
             {tab === 0 ? 'Registre-se aqui' : 'Fazer login aqui'}
+          </Button>
+        </Typography>
+        <Typography variant="body2" align="center" sx={{ mt: 2 }}>
+          Acesso interno
+          <Button 
+            size="small" 
+            onClick={() => navigate("/loginmod")}
+            sx={{ ml: 1 }}
+          >
+          Clique aqui
           </Button>
         </Typography>
       </Box>
