@@ -113,10 +113,6 @@ export default function MeusLivrosPage() {
   }
   return (
     <Box>
-      <Typography variant="h5" gutterBottom>
-        Meus Livros
-      </Typography>
-
       {/** Botão para abrir o diálogo de “Novo Livro” */}
       <Button
         variant="contained"

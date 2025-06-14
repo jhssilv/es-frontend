@@ -48,10 +48,6 @@ export default function BookSearchPage() {
 
   return (
     <Box sx={{ p: { xs: 1, sm: 2, md: 4 } }}>
-      <Typography variant="h4" gutterBottom align="center">
-        Busca de Livros
-      </Typography>
-
       {/* Responsive search bar using Stack */}
       <Stack
         direction={{ xs: 'column', sm: 'row' }}

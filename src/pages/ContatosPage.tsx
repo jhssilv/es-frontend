@@ -99,9 +99,6 @@ export default function ContactListPage() {
 
   return (
     <Box sx={{ p: { xs: 1, sm: 2, md: 4 } }}>
-      <Typography variant="h4" gutterBottom align="center">
-        Lista de Contatos
-      </Typography>
 
       {/* Search and Add */}
       <Stack
