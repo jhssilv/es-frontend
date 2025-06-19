@@ -29,6 +29,7 @@ import AccountIcon  from '@mui/icons-material/AccountCircle';
 import ContactsIcon from '@mui/icons-material/Contacts';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon   from '@mui/icons-material/Logout';
+import SwapCallsIcon from '@mui/icons-material/SwapCalls'; // Importar ícone para "Minhas Trocas"
 
 import { useAuth }  from '../components/functions/useAuth';
 import type { MenuItemData, PageKey } from '../types/MenuItemData';
@@ -37,6 +38,8 @@ import MeusLivrosPage from './MeusLivrosPage';
 import PesquisarPage  from './PesquisarPage';
 import ContatosPage   from './ContatosPage';
 import ConfiguracoesPage from './ConfiguracoesPage';
+import ExchangeOffersPopup from '../components/ExchangeOffersPopup';
+import ExchangesPage from './ExchangesPage'; // Importar o novo componente ExchangesPage
 
 const drawerWidth = 240;
 
@@ -51,15 +54,24 @@ const MainPage: React.FC = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
 
-  /** 
-   * Cada item do menu: 
-   * - Se `effect` existir, nós chamamos a função. 
-   * - Caso contrário, `text` é uma das chaves de PageKey, 
-   *   e então faremos setSelectedPage(text).
+  // Função para navegar para a página de trocas
+  const handleNavigateToExchangesPage = () => {
+    setSelectedPage('Minhas Trocas'); // Define a página selecionada para 'Minhas Trocas'
+    if (isMobile) {
+      setMobileOpen(false); // Fecha o drawer em mobile após a navegação
+    }
+  };
+
+  /**
+   * Cada item do menu:
+   * - Se `effect` existir, nós chamamos a função.
+   * - Caso contrário, `text` é uma das chaves de PageKey,
+   * e então faremos setSelectedPage(text).
    */
   const menuItems: MenuItemData[] = [
     { text: 'Pesquisar',    icon: <SearchIcon /> },
     { text: 'Meus Livros',  icon: <BookIcon /> },
+    { text: 'Minhas Trocas', icon: <SwapCallsIcon /> }, // Adicionado novo item de menu
     { text: 'Conta',        icon: <AccountIcon /> },
     { text: 'Contatos',     icon: <ContactsIcon /> },
     { text: 'Configurações',icon: <SettingsIcon /> },
@@ -97,7 +109,7 @@ const MainPage: React.FC = () => {
   );
 
   /**
-   * Esta função retorna o componente correto que deve aparecer 
+   * Esta função retorna o componente correto que deve aparecer
    * na área “Main Content”, de acordo com selectedPage.
    */
   function renderPageContent() {
@@ -106,6 +118,8 @@ const MainPage: React.FC = () => {
         return <PesquisarPage />;
       case 'Meus Livros':
         return <MeusLivrosPage />;
+      case 'Minhas Trocas': // Novo case para ExchangesPage
+        return <ExchangesPage />;
       case 'Conta':
         //return <ContaPage />;
         break;
@@ -143,7 +157,13 @@ const MainPage: React.FC = () => {
           <Typography variant="h6" sx={{ ml: isMobile ? 0 : 2 }}>
             Vira a Página
           </Typography>
-          <Typography variant="subtitle1">Oi, {user}!</Typography>
+
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <ExchangeOffersPopup onNavigateToExchanges={handleNavigateToExchangesPage} /> {/* Passando a prop */}
+            <Typography variant="subtitle1" sx={{ ml: 2 }}>
+              Oi, {user}!
+            </Typography>
+          </Box>
         </Toolbar>
       </AppBar>
 
@@ -225,12 +245,12 @@ const MainPage: React.FC = () => {
           <Button onClick={() => setLogoutModalOpen(false)} color="primary">
             Cancelar
           </Button>
-          <Button 
+          <Button
             onClick={() => {
               setLogoutModalOpen(false); // Fecha o modal
               logout(); // Executa o logout
-            }} 
-            color="error" 
+            }}
+            color="error"
             autoFocus
           >
             Sair

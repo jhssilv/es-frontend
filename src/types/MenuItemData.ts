@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 export type PageKey =
   | 'Pesquisar'
   | 'Meus Livros'
+  | 'Minhas Trocas'
   | 'Conta'
   | 'Contatos'
   | 'Configurações'
