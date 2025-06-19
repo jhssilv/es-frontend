@@ -185,10 +185,6 @@ export default function ExchangesPage() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
-        Minhas Ofertas de Troca
-      </Typography>
-
       {offers.length === 0 ? (
         <Typography>Você não tem nenhuma oferta de troca no momento.</Typography>
       ) : (
