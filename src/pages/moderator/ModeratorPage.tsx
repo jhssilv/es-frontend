@@ -29,7 +29,6 @@ import LogoutIcon   from '@mui/icons-material/Logout';
 // Ícones específicos para Moderador
 import GroupIcon        from '@mui/icons-material/Group';
 import RateReviewIcon   from '@mui/icons-material/RateReview';
-import DashboardIcon    from '@mui/icons-material/Dashboard';
 import CampaignIcon     from '@mui/icons-material/Campaign';
 
 import { useAuth }  from '../../components/functions/useAuth';
@@ -37,9 +36,10 @@ import { useAuth }  from '../../components/functions/useAuth';
 // Páginas
 import ConfiguracoesPage from '../shared/ConfiguracoesPage';
 import PesquisarPage from './PesquisarPage';
+import UserManagementPage from './UserManagementPage';
 
 // Tipos para menu e páginas de moderador
-type ModeratorPageKey = 'Gerenciar Publicações' | 'Gerenciar Usuários' | 'Avaliações de usuários' | 'Configurações';
+type ModeratorPageKey = 'Gerenciar Publicações' | 'Gerenciar Usuários' | 'Configurações';
 interface ModeratorMenuItem {
   text: ModeratorPageKey | 'Logout';
   icon: JSX.Element;
@@ -64,11 +64,10 @@ const ModeratorPage: React.FC = () => {
   /** * Itens de menu específicos para o Moderador.
    */
   const moderatorMenuItems: ModeratorMenuItem[] = [
-    { text: 'Gerenciar Publicações', icon: <GroupIcon /> },
-    { text: 'Gerenciar Usuários',   icon: <RateReviewIcon /> },
-    { text: 'Avaliações de usuários',          icon: <DashboardIcon /> },
-    { text: 'Configurações',           icon: <CampaignIcon /> },
-    { text: 'Logout',             icon: <LogoutIcon />, effect: () => setLogoutModalOpen(true) },
+    { text: 'Gerenciar Publicações',            icon: <GroupIcon /> },
+    { text: 'Gerenciar Usuários',               icon: <RateReviewIcon /> },
+    { text: 'Configurações',                    icon: <CampaignIcon /> },
+    { text: 'Logout',                           icon: <LogoutIcon />, effect: () => setLogoutModalOpen(true) },
   ];
 
   /** Este bloco renderiza o conteúdo do drawer (menu lateral). */
@@ -110,11 +109,7 @@ const ModeratorPage: React.FC = () => {
       case 'Gerenciar Publicações':
         return <PesquisarPage />;
       case 'Gerenciar Usuários':
-        // return <GerenciarUsuariosPage />;
-        return <Typography>Página para gerenciamento de usuários.</Typography>;
-      case 'Avaliações de usuários':
-        // return <AvaliacoesPage />;
-        return <Typography>Página com as avaliações dos usuários.</Typography>;
+        return <UserManagementPage />;
       case 'Configurações':
         return <ConfiguracoesPage />;
       default:
