@@ -39,7 +39,8 @@ import PesquisarPage  from './PesquisarPage';
 import ContatosPage   from './ContatosPage';
 import ConfiguracoesPage from '../shared/ConfiguracoesPage';
 import ExchangeOffersPopup from '../../components/ExchangeOffersPopup';
-import ExchangesPage from './ExchangesPage'; // Importar o novo componente ExchangesPage
+import ExchangesPage from './ExchangesPage';
+import UserProfilePage from './ContaPage';
 
 const drawerWidth = 240;
 
@@ -121,8 +122,7 @@ const MainPage: React.FC = () => {
       case 'Minhas Trocas': // Novo case para ExchangesPage
         return <ExchangesPage />;
       case 'Conta':
-        //return <ContaPage />;
-        break;
+        return <UserProfilePage />;
       case 'Contatos':
         return <ContatosPage />;
       case 'Configurações':
