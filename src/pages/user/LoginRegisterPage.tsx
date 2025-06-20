@@ -8,7 +8,7 @@ import Tab        from '@mui/material/Tab';
 import Alert      from '@mui/material/Alert';
 import Typography from '@mui/material/Typography';
 import axios from 'axios';
-import { useAuth } from '../components/functions/useAuth';
+import { useAuth } from '../../components/functions/useAuth';
 import { useNavigate } from 'react-router-dom';
 
 interface FormState {

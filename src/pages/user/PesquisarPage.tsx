@@ -15,7 +15,7 @@ import Stack from '@mui/material/Stack';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 
-import type { Book } from '../types/Book';
+import type { Book } from '../../types/Book';
 
 const initialBooks: Book[] = [
   { id: 1, title: 'Dom Casmurro', author: 'Machado de Assis', year: 1899 },
@@ -23,7 +23,7 @@ const initialBooks: Book[] = [
   { id: 3, title: 'Harry Potter e a Pedra Filosofal', author: 'J.K. Rowling', year: 1997 },
 ];
 
-export default function BookSearchPage() {
+export default function PesquisarPage() {
   const [books] = useState<Book[]>(initialBooks);
   const [results, setResults] = useState<Book[]>(initialBooks);
   const [query, setQuery] = useState('');

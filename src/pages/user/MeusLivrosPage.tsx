@@ -21,7 +21,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 
-import type { Book } from '../types/Book';
+import type { Book } from '../../types/Book';
 
 export default function MeusLivrosPage() {
   const [books, setBooks] = useState<Book[]>([]);

@@ -4,7 +4,7 @@ import InputLabel from '@mui/material/InputLabel';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 
-import { useConfig } from '../components/functions/useConfig';
+import { useConfig } from '../../components/functions/useConfig';
 
 export default function ConfiguracoesPage() {
   const { theme, setTheme } = useConfig();

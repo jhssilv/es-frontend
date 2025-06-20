@@ -13,10 +13,10 @@ import { AuthProvider } from './components/AuthContext';
 import { ConfigProvider, ConfigContext, type Config } from './components/ConfigContext' // Import ConfigContext and Config type
 
 // Routes
-import LoginRegisterPage from './pages/LoginRegisterPage';
-import LoginModeratorPage from './pages/LoginModeratorPage';
-import MainPage from './pages/MainPage';
-import ModeratorPage from './pages/ModeratorPage';
+import LoginRegisterPage from './pages/user/LoginRegisterPage';
+import LoginModeratorPage from './pages/moderator/LoginModeratorPage';
+import MainPage from './pages/user/MainPage';
+import ModeratorPage from './pages/moderator/ModeratorPage';
 
 // Route protection
 import ProtectedRoute from './components/ProtectedRoute';
