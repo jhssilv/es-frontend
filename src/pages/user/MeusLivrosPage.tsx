@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -16,104 +17,180 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
+import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
+import Select, { type SelectChangeEvent } from '@mui/material/Select';
+import MenuItem from '@mui/material/MenuItem';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
 
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
+import { useAuth } from '../../components/functions/useAuth';
 
-import type { Book } from '../../types/Book';
+// --- Tipos e Enums ---
+type BookCondition = 'LIKE_NEW' | 'GOOD' | 'ACCEPTABLE';
 
+// Presumindo os tipos de retorno da API
+type Book = {
+  id: number;
+  title: string;
+  author: string;
+  year: number;
+  discipline: string;
+  condition: BookCondition;
+  description: string;
+  ownerId: number;
+};
+
+// Opções para os campos de seleção
+const disciplines = ['Ciências Exatas', 'Ciências Humanas', 'Literatura', 'Artes', 'Outro'];
+// Atualizando as opções de condição do livro
+const conditions = [
+  { value: 'LIKE_NEW', label: 'Como Novo' },
+  { value: 'GOOD', label: 'Bom' },
+  { value: 'ACCEPTABLE', label: 'Aceitável' },
+];
+
+// --- Componente Principal ---
 export default function MeusLivrosPage() {
   const [books, setBooks] = useState<Book[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-
-  /** 
-   * Estado para saber se o diálogo está em modo “edição” ou “criação”.
-   * - Se for null, significa que estou criando um novo livro.
-   * - Se contiver um Book, significa que estou editando esse livro.
-   */
   const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const {user} = useAuth();
 
-  /** Campos temporários para título, autor e ano dentro do formulário */
-  const [tempTitle, setTempTitle] = useState('');
-  const [tempAuthor, setTempAuthor] = useState('');
-  const [tempYear, setTempYear] = useState<number | ''>('');
+  // Estados para o formulário
+  const [formData, setFormData] = useState({
+    title: '',
+    author: '',
+    year: '' as number | '',
+    discipline: '',
+    condition: 'GOOD',
+    description: '',
+  });
 
-  // ------------ FUNÇÕES AUXILIARES ------------
+  // Estados de controle da UI
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  /** Abre o diálogo em modo “criar” (limpa campos) */
-  function handleOpenNewBookDialog() {
+  // --- Funções da API ---
+  const fetchBooks = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Rota para buscar livros do usuário logado (ex: /books?ownerId=1)
+      const response = await axios.get(`/users/${user?.id}`);
+      // A API /books retorna um objeto com "items", então pegamos a lista de dentro
+      setBooks(response.data.items || []);
+    } catch (err) {
+      console.error("Erro ao buscar livros:", err);
+      setError('Falha ao carregar seus livros. Tente recarregar a página.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchBooks();
+  }, [fetchBooks]);
+  
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+  
+  const handleSelectChange = (e: SelectChangeEvent) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  }
+
+  const handleOpenNewBookDialog = () => {
     setEditingBook(null);
-    setTempTitle('');
-    setTempAuthor('');
-    setTempYear('');
+    setFormData({
+      title: '', author: '', year: '', discipline: '',
+      condition: 'GOOD', description: '',
+    });
     setDialogOpen(true);
-  }
+    setFormError(null);
+  };
 
-  /**
-   * Abre o diálogo em modo “editar”
-   * Recebe o livro que será editado para preencher os campos
-   */
-  function handleOpenEditBookDialog(book: Book) {
+  const handleOpenEditBookDialog = (book: Book) => {
     setEditingBook(book);
-    setTempTitle(book.title);
-    setTempAuthor(book.author);
-    setTempYear(book.year);
+    setFormData({
+      title: book.title,
+      author: book.author,
+      year: book.year,
+      discipline: book.discipline,
+      condition: book.condition,
+      description: book.description,
+    });
     setDialogOpen(true);
-  }
+    setFormError(null);
+  };
 
-  /** Fecha o diálogo (seja em criação ou edição) */
-  function handleCloseDialog() {
+  const handleCloseDialog = () => {
+    if (isSubmitting) return;
     setDialogOpen(false);
     setEditingBook(null);
-  }
+  };
 
-  /**
-   * Salva (cria ou atualiza) um livro:
-   * - Se estiver em edição (editingBook !== null), atualiza o livro na lista.
-   * - Senão, cria um livro novo com ID gerado via Date.now().
-   */
-  function handleSaveBook() {
-    if (tempTitle.trim() === '' || tempAuthor.trim() === '' || tempYear === '') {
-      // Aqui você poderia mostrar um alerta ou mensagem de erro se algum campo estiver vazio.
+  const handleSaveBook = async () => {
+    if (!formData.title || !formData.author || !formData.year) {
+      setFormError('Título, autor e ano são obrigatórios.');
       return;
     }
+    setFormError(null);
+    setIsSubmitting(true);
 
-    if (editingBook) {
-      // Modo edição: atualiza o livro existente
-      setBooks(prev =>
-        prev.map(b => {
-          if (b.id === editingBook.id) {
-            return { ...b, title: tempTitle, author: tempAuthor, year: Number(tempYear) };
-          }
-          return b;
-        })
-      );
-    } else {
-      // Modo criação: adiciona um livro novo à lista
-      const newBook: Book = {
-        id: Date.now(), // usar Date.now() só como exemplo de ID único rápido
-        title: tempTitle,
-        author: tempAuthor,
-        year: Number(tempYear),
-      };
-      setBooks(prev => [...prev, newBook]);
+    const bookData = { ...formData, year: Number(formData.year), ownerId: user?.id };
+
+    try {
+      if (editingBook) {
+        // Modo Edição (assumindo uma rota PUT /books/:id)
+        const { data: updatedBook } = await axios.put(`/books/${editingBook.id}`, bookData);
+        setBooks(prev => prev.map(b => (b.id === editingBook.id ? updatedBook : b)));
+      } else {
+        // Modo Criação
+        const { data: newBook } = await axios.post('/books', bookData);
+        setBooks(prev => [...prev, newBook]);
+      }
+      handleCloseDialog();
+    } catch (err) {
+      console.error("Erro ao salvar livro:", err);
+      setFormError('Não foi possível salvar o livro. Tente novamente.');
+    } finally {
+      setIsSubmitting(false);
     }
+  };
 
-    // Fecha o diálogo e limpa o estado de edição
-    handleCloseDialog();
+  const handleDeleteBook = async (id: number) => {
+    // Adicionar uma confirmação real seria uma boa prática
+    if (window.confirm('Tem certeza que deseja remover este livro?')) {
+      try {
+        await axios.delete(`/books/${id}`);
+        setBooks(prev => prev.filter(b => b.id !== id));
+      } catch (err) {
+        console.error("Erro ao deletar livro:", err);
+        // Mostrar um alerta/toast de erro para o usuário
+        alert('Não foi possível remover o livro.');
+      }
+    }
+  };
+
+  if (loading) {
+    return <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress /></Box>;
   }
 
-  /**
-   * Remove um livro da lista a partir do ID.
-   * Você pode adicionar um “confirm dialog” antes de chamar essa função, se quiser.
-   */
-  function handleDeleteBook(id: number) {
-    setBooks(prev => prev.filter(b => b.id !== id));
+  if (error) {
+    return <Alert severity="error">{error}</Alert>;
   }
+
   return (
     <Box>
-      {/** Botão para abrir o diálogo de “Novo Livro” */}
       <Button
         variant="contained"
         color="primary"
@@ -124,11 +201,9 @@ export default function MeusLivrosPage() {
         Publicar Novo Livro
       </Button>
 
-      {/** Se não houver livros, mostramos uma mensagem */}
       {books.length === 0 ? (
         <Typography>Você ainda não publicou nenhum livro.</Typography>
       ) : (
-        /** Se houver livros, mostramos em uma tabela */
         <TableContainer component={Paper}>
           <Table>
             <TableHead>
@@ -136,32 +211,22 @@ export default function MeusLivrosPage() {
                 <TableCell>Título</TableCell>
                 <TableCell>Autor</TableCell>
                 <TableCell>Ano</TableCell>
+                <TableCell>Condição</TableCell>
                 <TableCell align="right">Ações</TableCell>
               </TableRow>
             </TableHead>
-
             <TableBody>
               {books.map(book => (
-                <TableRow key={book.id}>
+                <TableRow key={book.id} hover>
                   <TableCell>{book.title}</TableCell>
                   <TableCell>{book.author}</TableCell>
                   <TableCell>{book.year}</TableCell>
+                  <TableCell>{conditions.find(c => c.value === book.condition)?.label || book.condition}</TableCell>
                   <TableCell align="right">
-                    {/** Botão de Editar */}
-                    <IconButton
-                      size="small"
-                      color="primary"
-                      onClick={() => handleOpenEditBookDialog(book)}
-                    >
+                    <IconButton size="small" color="primary" onClick={() => handleOpenEditBookDialog(book)}>
                       <EditIcon />
                     </IconButton>
-
-                    {/** Botão de Remover */}
-                    <IconButton
-                      size="small"
-                      color="error"
-                      onClick={() => handleDeleteBook(book.id)}
-                    >
+                    <IconButton size="small" color="error" onClick={() => handleDeleteBook(book.id)}>
                       <DeleteIcon />
                     </IconButton>
                   </TableCell>
@@ -172,61 +237,36 @@ export default function MeusLivrosPage() {
         </TableContainer>
       )}
 
-      {/**
-       * Diálogo para criar ou editar um livro.
-       * - Se editingBook é null, estamos em “criar” (título do diálogo: “Publicar Livro”).
-       * - Se editingBook não é null, estamos em “editar” (título: “Editar Livro”).
-       */}
       <Dialog open={dialogOpen} onClose={handleCloseDialog} fullWidth maxWidth="sm">
         <DialogTitle>{editingBook ? 'Editar Livro' : 'Publicar Livro'}</DialogTitle>
         <DialogContent>
-          {/** Campo para Título */}
-          <TextField
-            autoFocus
-            margin="dense"
-            label="Título"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={tempTitle}
-            onChange={e => setTempTitle(e.target.value)}
-          />
+          <TextField autoFocus name="title" margin="dense" label="Título" type="text" fullWidth variant="outlined" value={formData.title} onChange={handleInputChange} />
+          <TextField name="author" margin="dense" label="Autor" type="text" fullWidth variant="outlined" value={formData.author} onChange={handleInputChange} />
+          <TextField name="year" margin="dense" label="Ano de Publicação" type="number" fullWidth variant="outlined" value={formData.year} onChange={handleInputChange} />
+          
+          <FormControl fullWidth margin="dense">
+            <InputLabel>Disciplina</InputLabel>
+            <Select name="discipline" label="Disciplina" value={formData.discipline} onChange={handleSelectChange}>
+              {disciplines.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
+            </Select>
+          </FormControl>
+          
+          <FormControl fullWidth margin="dense">
+            <InputLabel>Condição</InputLabel>
+            <Select name="condition" label="Condição" value={formData.condition} onChange={handleSelectChange}>
+              {conditions.map(c => <MenuItem key={c.value} value={c.value}>{c.label}</MenuItem>)}
+            </Select>
+          </FormControl>
 
-          {/** Campo para Autor */}
-          <TextField
-            margin="dense"
-            label="Autor"
-            type="text"
-            fullWidth
-            variant="outlined"
-            value={tempAuthor}
-            onChange={e => setTempAuthor(e.target.value)}
-          />
+          <TextField name="description" margin="dense" label="Descrição (opcional)" type="text" multiline rows={3} fullWidth variant="outlined" value={formData.description} onChange={handleInputChange} />
 
-          {/** Campo para Ano */}
-          <TextField
-            margin="dense"
-            label="Ano de Publicação"
-            type="number"
-            fullWidth
-            variant="outlined"
-            value={tempYear}
-            onChange={e => {
-              // Permitimos somente números inteiros
-              const val = e.target.value;
-              if (val === '') {
-                setTempYear('');
-              } else if (!isNaN(Number(val))) {
-                setTempYear(Number(val));
-              }
-            }}
-          />
+          {formError && <Alert severity="error" sx={{ mt: 2 }}>{formError}</Alert>}
         </DialogContent>
 
         <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancelar</Button>
-          <Button variant="contained" onClick={handleSaveBook}>
-            {editingBook ? 'Salvar Alterações' : 'Publicar'}
+          <Button onClick={handleCloseDialog} disabled={isSubmitting}>Cancelar</Button>
+          <Button variant="contained" onClick={handleSaveBook} disabled={isSubmitting}>
+            {isSubmitting ? <CircularProgress size={24} /> : (editingBook ? 'Salvar Alterações' : 'Publicar')}
           </Button>
         </DialogActions>
       </Dialog>

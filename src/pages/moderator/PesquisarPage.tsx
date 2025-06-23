@@ -73,7 +73,7 @@ export default function App() {
   const openActionsMenu = Boolean(anchorElActionsMenu);
 
   // Filter books based on search term and status filter
-  const filteredBooks = useMemo(() => {1111111111111
+  const filteredBooks = useMemo(() => {
     let currentBooks = books;
 
     // Apply status filter

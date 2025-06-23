@@ -23,22 +23,14 @@ import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import ListSubheader from '@mui/material/ListSubheader';
 import Divider from '@mui/material/Divider';
+import { useAuth } from '../../components/functions/useAuth';
+import { type Book } from '../../types/Book';
 
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-
-// --- Tipos ---
-
-type Book = {
-  id: number;
-  title: string;
-  author: string;
-  year: number;
-  owner: { id: number, name: string };
-};
 
 type PaginationMeta = {
   totalItems: number;
@@ -59,13 +51,13 @@ export default function PesquisarPage() {
   const [loading, setLoading] = useState(true);
   const [loadingMyBooks, setLoadingMyBooks] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const {user} = useAuth();
   
   // State para o Modal de Troca
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [mySelectedBooks, setMySelectedBooks] = useState<number[]>([]);
   const [exchangeFeedback, setExchangeFeedback] = useState<{type: 'success' | 'error', message: string} | null>(null);
-
 
   const fetchBooks = useCallback(async (currentPage = 1, searchQuery = '') => {
     setLoading(true);
@@ -93,10 +85,9 @@ export default function PesquisarPage() {
     const fetchMyBooks = async () => {
         setLoadingMyBooks(true);
         try {
-            // Em um app real, esta rota buscaria os livros do usuário autenticado
-            // Para este exemplo, vamos simular a resposta de `myBooks`
-            const { data } = await axios.get('/users/me/books'); 
-            setMyBooks(data);
+            const { data } = await axios.get(`/books/${user?.id}`);
+            console.log(data);
+            setMyBooks(data.items || []);
         } catch (e) {
             console.error("Erro ao buscar 'meus livros':", e);
             // Poderia ter um state de erro específico para esta falha
@@ -158,7 +149,7 @@ export default function PesquisarPage() {
       }
       
       const payload = {
-          matchId: selectedBook.owner.id,
+          matchId: selectedBook.ownerId,
           requesterBooksIds: mySelectedBooks,
           providerBooksIds: [selectedBook.id],
           completionDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -227,7 +218,7 @@ export default function PesquisarPage() {
                     <TableCell>{book.title}</TableCell>
                     <TableCell>{book.author}</TableCell>
                     <TableCell>{book.year}</TableCell>
-                    <TableCell>{book.owner.name}</TableCell>
+                    <TableCell>{book.ownerId}</TableCell>
                     <TableCell align="center">
                       <Button 
                         variant="outlined" 
@@ -285,7 +276,7 @@ export default function PesquisarPage() {
                         Propor Troca
                     </Typography>
                     <Typography sx={{ mt: 2 }}>
-                        Você quer o livro <strong>{selectedBook.title}</strong> de {selectedBook.owner.name}.
+                        Você quer o livro <strong>{selectedBook.title}</strong> de {selectedBook.ownerId}.
                     </Typography>
                     <Typography sx={{ mt: 1, mb: 2 }}>
                         Selecione um ou mais livros seus para oferecer em troca:
