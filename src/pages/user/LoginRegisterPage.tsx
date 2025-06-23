@@ -77,8 +77,6 @@ const LoginRegisterPage: React.FC = () => {
             id: res.data.id, 
             name: res.data.name, 
             email: res.data.email,
-            // Assumindo que sua API também retorna 'role' para o redirecionamento
-            role: res.data.role, 
           }, res.data.token);
 
           navigate('/main');
