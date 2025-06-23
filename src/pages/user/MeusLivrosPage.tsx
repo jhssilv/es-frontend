@@ -23,26 +23,12 @@ import Select, { type SelectChangeEvent } from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
+import { type Book } from '../../types/Book';
 
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { useAuth } from '../../components/functions/useAuth';
-
-// --- Tipos e Enums ---
-type BookCondition = 'LIKE_NEW' | 'GOOD' | 'ACCEPTABLE';
-
-// Presumindo os tipos de retorno da API
-type Book = {
-  id: number;
-  title: string;
-  author: string;
-  year: number;
-  discipline: string;
-  condition: BookCondition;
-  description: string;
-  ownerId: number;
-};
 
 // Opções para os campos de seleção
 const disciplines = ['Ciências Exatas', 'Ciências Humanas', 'Literatura', 'Artes', 'Outro'];
@@ -82,8 +68,9 @@ export default function MeusLivrosPage() {
     setError(null);
     try {
       // Rota para buscar livros do usuário logado (ex: /books?ownerId=1)
-      const response = await axios.get(`/users/${user?.id}`);
+      const response = await axios.get(`/books/user/${user?.id}`);
       // A API /books retorna um objeto com "items", então pegamos a lista de dentro
+      console.log(response);
       setBooks(response.data.items || []);
     } catch (err) {
       console.error("Erro ao buscar livros:", err);
@@ -150,8 +137,7 @@ export default function MeusLivrosPage() {
 
     try {
       if (editingBook) {
-        // Modo Edição (assumindo uma rota PUT /books/:id)
-        const { data: updatedBook } = await axios.put(`/books/${editingBook.id}`, bookData);
+        const { data: updatedBook } = await axios.patch(`/books/${editingBook.id}`, bookData);
         setBooks(prev => prev.map(b => (b.id === editingBook.id ? updatedBook : b)));
       } else {
         // Modo Criação
