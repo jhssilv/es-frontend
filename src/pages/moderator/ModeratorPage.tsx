@@ -1,232 +1,114 @@
-import React, { useState, type JSX } from 'react';
+import { useState } from 'react';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import Paper from '@mui/material/Paper';
+import Table from '@mui/material/Table';
+import TableBody from '@mui/material/TableBody';
+import TableCell from '@mui/material/TableCell';
+import TableContainer from '@mui/material/TableContainer';
+import TableHead from '@mui/material/TableHead';
+import TableRow from '@mui/material/TableRow';
+import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import Stack from '@mui/material/Stack';
 
-import AppBar         from '@mui/material/AppBar';
-import Box            from '@mui/material/Box';
-import CssBaseline    from '@mui/material/CssBaseline';
-import Divider        from '@mui/material/Divider';
-import Drawer         from '@mui/material/Drawer';
-import IconButton     from '@mui/material/IconButton';
-import List           from '@mui/material/List';
-import ListItem       from '@mui/material/ListItem';
-import ListItemIcon   from '@mui/material/ListItemIcon';
-import ListItemText   from '@mui/material/ListItemText';
-import Toolbar        from '@mui/material/Toolbar';
-import Typography     from '@mui/material/Typography';
-import Button         from '@mui/material/Button';
-import Dialog         from '@mui/material/Dialog';
-import DialogActions  from '@mui/material/DialogActions';
-import DialogContent  from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle    from '@mui/material/DialogTitle';
-import { useTheme }   from '@mui/material/styles';
-import useMediaQuery  from '@mui/material/useMediaQuery';
-import { ListItemButton } from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
 
-// Ícones Genéricos
-import MenuIcon     from '@mui/icons-material/Menu';
-import LogoutIcon   from '@mui/icons-material/Logout';
+import type { Book } from '../../types/Book';
 
-// Ícones específicos para Moderador
-import GroupIcon        from '@mui/icons-material/Group';
-import RateReviewIcon   from '@mui/icons-material/RateReview';
-import CampaignIcon     from '@mui/icons-material/Campaign';
+const initialBooks: Book[] = [
+  { id: 1, title: 'Dom Casmurro', author: 'Machado de Assis', year: 1899 },
+  { id: 2, title: 'O Alquimista', author: 'Paulo Coelho', year: 1988 },
+  { id: 3, title: 'Harry Potter e a Pedra Filosofal', author: 'J.K. Rowling', year: 1997 },
+];
 
-import { useAuth }  from '../../components/functions/useAuth';
+export default function PesquisarPage() {
+  const [books] = useState<Book[]>(initialBooks);
+  const [results, setResults] = useState<Book[]>(initialBooks);
+  const [query, setQuery] = useState('');
 
-// Páginas
-import ConfiguracoesPage from '../shared/ConfiguracoesPage';
-import PesquisarPage from './PesquisarPage';
-import UserManagementPage from './UserManagementPage';
+  const handleSearch = () => {
+    const q = query.trim().toLowerCase();
+    setResults(
+      q
+        ? books.filter(
+            ({ title, author }) =>
+              title.toLowerCase().includes(q) ||
+              author.toLowerCase().includes(q)
+          )
+        : books
+    );
+  };
 
-// Tipos para menu e páginas de moderador
-type ModeratorPageKey = 'Gerenciar Publicações' | 'Gerenciar Usuários' | 'Configurações';
-interface ModeratorMenuItem {
-  text: ModeratorPageKey | 'Logout';
-  icon: JSX.Element;
-  effect?: () => void;
-}
-
-const drawerWidth = 240;
-
-const ModeratorPage: React.FC = () => {
-  const { user, logout } = useAuth();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const [isLogoutModalOpen, setLogoutModalOpen] = useState(false);
-  
-  // O estado inicial agora reflete a primeira página do moderador
-  const [selectedPage, setSelectedPage] = useState<ModeratorPageKey>('Gerenciar Publicações');
-
-  /** Controle de abertura do drawer em mobile */
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const handleDrawerToggle = () => setMobileOpen(!mobileOpen);
-
-  /** * Itens de menu específicos para o Moderador.
-   */
-  const moderatorMenuItems: ModeratorMenuItem[] = [
-    { text: 'Gerenciar Publicações',            icon: <GroupIcon /> },
-    { text: 'Gerenciar Usuários',               icon: <RateReviewIcon /> },
-    { text: 'Configurações',                    icon: <CampaignIcon /> },
-    { text: 'Logout',                           icon: <LogoutIcon />, effect: () => setLogoutModalOpen(true) },
-  ];
-
-  /** Este bloco renderiza o conteúdo do drawer (menu lateral). */
-  const drawer = (
-    <div>
-      <Toolbar />
-      <Divider />
-      <List>
-        {moderatorMenuItems.map(({ text, icon, effect }) => (
-          <ListItem key={text} disablePadding>
-            <ListItemButton
-              onClick={() => {
-                if (effect) {
-                  effect();
-                } else {
-                  setSelectedPage(text as ModeratorPageKey);
-                }
-                if (isMobile) {
-                  setMobileOpen(false);
-                }
-              }}
-              selected={!effect && selectedPage === text}
-            >
-              <ListItemIcon>{icon}</ListItemIcon>
-              <ListItemText primary={text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-    </div>
-  );
-
-  /**
-   * Esta função retorna o componente correto para a área de conteúdo principal,
-   * de acordo com a página de moderador selecionada.
-   */
-  function renderPageContent() {
-    switch (selectedPage) {
-      case 'Gerenciar Publicações':
-        return <PesquisarPage />;
-      case 'Gerenciar Usuários':
-        return <UserManagementPage />;
-      case 'Configurações':
-        return <ConfiguracoesPage />;
-      default:
-        return <Typography>Ops… página desconhecida</Typography>;
-    }
-  }
+  const handleClear = () => {
+    setQuery('');
+    setResults(books);
+  };
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <CssBaseline />
-
-      {/* Top AppBar com indicação de Moderador */}
-      <AppBar
-        position="fixed"
-        sx={{
-          zIndex: (theme) => theme.zIndex.drawer + 1,
-        }}
+    <Box sx={{ p: { xs: 1, sm: 2, md: 4 } }}>
+      {/* Responsive search bar using Stack */}
+      <Stack
+        direction={{ xs: 'column', sm: 'row' }}
+        spacing={2}
+        alignItems="center"
+        sx={{ mb: { xs: 1, sm: 2 } }}
       >
-        <Toolbar sx={{ justifyContent: 'space-between' }}>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            {isMobile && (
-              <IconButton
-                color="inherit"
-                edge="start"
-                onClick={handleDrawerToggle}
-                sx={{ mr: 2 }}
-              >
-                <MenuIcon />
-              </IconButton>
-            )}
-            <Typography variant="h6" noWrap>
-              Vira a Página
-            </Typography>
-            <Typography variant="subtitle2" sx={{ ml: 1, opacity: 0.7 }}>
-              (Moderador)
-            </Typography>
-          </Box>
-          <Typography variant="subtitle1">Oi, {user}!</Typography>
-        </Toolbar>
-      </AppBar>
+        <TextField
+          label="Pesquisar por título ou autor"
+          variant="outlined"
+          fullWidth
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+        />
 
-      {/* Side Drawer */}
-      <Box
-        component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-        aria-label="navegação de moderador"
-      >
-        {isMobile && (
-          <Drawer
-            variant="temporary"
-            open={mobileOpen}
-            onClose={handleDrawerToggle}
-            ModalProps={{ keepMounted: true }}
-            sx={{ '& .MuiDrawer-paper': { width: drawerWidth } }}
+        <Stack direction="row" spacing={1}>
+          <Button
+            variant="contained"
+            startIcon={<SearchIcon />}
+            onClick={handleSearch}
           >
-            {drawer}
-          </Drawer>
-        )}
-        {!isMobile && (
-          <Drawer
-            variant="permanent"
-            open
-            sx={{ '& .MuiDrawer-paper': { width: drawerWidth, boxSizing: 'border-box' } }}
-          >
-            {drawer}
-          </Drawer>
-        )}
-      </Box>
-
-      {/* Main Content */}
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          mt: 8,
-        }}
-      >
-        <Typography variant="h4" gutterBottom>
-          {selectedPage}
-        </Typography>
-
-        {renderPageContent()}
-      </Box>
-
-      {/* Modal de Confirmação de Logout (sem alterações) */}
-      <Dialog
-        open={isLogoutModalOpen}
-        onClose={() => setLogoutModalOpen(false)}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title">{"Confirmar Logout"}</DialogTitle>
-        <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            Você tem certeza que deseja sair da sua conta?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setLogoutModalOpen(false)} color="primary">
-            Cancelar
+            Buscar
           </Button>
-          <Button 
-            onClick={() => {
-              setLogoutModalOpen(false);
-              logout();
-            }} 
-            color="error" 
-            autoFocus
+          <Button
+            variant="outlined"
+            startIcon={<ClearIcon />}
+            onClick={handleClear}
           >
-            Sair
+            Limpar
           </Button>
-        </DialogActions>
-      </Dialog>
+        </Stack>
+      </Stack>
+
+      {results.length === 0 ? (
+        <Typography align="center">Nenhum livro encontrado.</Typography>
+      ) : (
+        <TableContainer
+          component={Paper}
+          sx={{ maxHeight: { xs: '50vh', sm: '60vh' }, overflowX: 'auto' }}
+        >
+          <Table stickyHeader>
+            <TableHead>
+              <TableRow>
+                <TableCell>Título</TableCell>
+                <TableCell>Autor</TableCell>
+                <TableCell>Ano</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {results.map((book) => (
+                <TableRow key={book.id} hover>
+                  <TableCell>{book.title}</TableCell>
+                  <TableCell>{book.author}</TableCell>
+                  <TableCell>{book.year}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
     </Box>
   );
-};
-
-export default ModeratorPage;
+}

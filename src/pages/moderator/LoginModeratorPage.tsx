@@ -44,7 +44,6 @@ const LoginModeratorPage: React.FC = () => {
             id: res.data.id, 
             name: res.data.name, 
             email: res.data.email,
-            role: res.data.role, 
           }, res.data.token);
 
           console.log(res.data.role);

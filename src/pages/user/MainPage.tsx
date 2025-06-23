@@ -29,7 +29,7 @@ import AccountIcon  from '@mui/icons-material/AccountCircle';
 import ContactsIcon from '@mui/icons-material/Contacts';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon   from '@mui/icons-material/Logout';
-import SwapCallsIcon from '@mui/icons-material/SwapCalls'; // Importar ícone para "Minhas Trocas"
+import SwapCallsIcon from '@mui/icons-material/SwapCalls';
 
 import { useAuth }  from '../../components/functions/useAuth';
 import type { MenuItemData, PageKey } from '../../types/MenuItemData';
@@ -161,7 +161,7 @@ const MainPage: React.FC = () => {
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <ExchangeOffersPopup onNavigateToExchanges={handleNavigateToExchangesPage} /> {/* Passando a prop */}
             <Typography variant="subtitle1" sx={{ ml: 2 }}>
-              Oi, {user}!
+              Oi, {user ? user.name : 'Visitante'}!
             </Typography>
           </Box>
         </Toolbar>
