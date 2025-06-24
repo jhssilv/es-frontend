@@ -39,7 +39,7 @@ import UserManagementPage from './UserManagementPage';
 import ExchangeManagementPage from './ManageExchanges';
 
 // --- TIPOS ATUALIZADOS ---
-type ModeratorPageKey = 'Gerenciar Trocas' | 'Gerenciar Usuários' | 'Configurações'; // <-- MUDANÇA: Atualiza a chave da página
+type ModeratorPageKey = 'Gerenciar Trocas' | 'Gerenciar Usuários' | 'Configurações';
 interface ModeratorMenuItem {
   text: ModeratorPageKey | 'Logout';
   icon: JSX.Element;

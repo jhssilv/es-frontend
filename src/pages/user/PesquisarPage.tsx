@@ -42,10 +42,9 @@ type PaginationMeta = {
 
 
 // --- Componente Principal ---
-
 export default function PesquisarPage() {
   const [books, setBooks] = useState<Book[]>([]);
-  const [myBooks, setMyBooks] = useState<Book[]>([]); // Livros do usuário logado
+  const [myBooks, setMyBooks] = useState<Book[]>([]);
   const [meta, setMeta] = useState<PaginationMeta | null>(null);
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(true);
@@ -154,10 +153,7 @@ const handleProposeExchange = async () => {
         return;
     }
 
-    // --- INÍCIO DA CORREÇÃO ---
-    // Removemos o .split('T')[0] para enviar a data completa no formato ISO 8601
     const completionDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-    // --- FIM DA CORREÇÃO ---
 
     const exchangePromises = mySelectedBooks.map(currentRequesterBookId => {
         const payload = {

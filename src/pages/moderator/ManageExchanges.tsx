@@ -58,24 +58,6 @@ type Exchange = {
   providerBook: Book;
 };
 
-// Tipo de dados como vem da API (com objetos aninhados)
-type ApiExchange = {
-  id: number;
-  status: ExchangeStatus;
-  requestDate: string;
-  completionDate: string;
-  requesterBook: {
-      id: number;
-      title: string;
-      owner: User;
-  };
-  providerBook: {
-      id: number;
-      title: string;
-      owner: User;
-  }
-};
-
 // Funções auxiliares para status
 const getFriendlyStatusName = (status: ExchangeStatus) => {
     const names = {
@@ -118,26 +100,26 @@ export default function ExchangeManagementPage() {
       try {
         setLoading(true);
         setError(null);
-        // Assumindo um endpoint para moderadores buscarem todas as trocas
-        const response = await axios.get('/exchanges'); 
-        const exchangeList: ApiExchange[] = response.data.items || response.data;
+        const response = await axios.get('/exchanges');
+        const exchangeList: any[] = response.data?.items || response.data || [];
 
         if (!Array.isArray(exchangeList)) {
-            throw new Error("Formato de dados inesperado recebido do servidor.");
+            throw new Error("A resposta da API não é um array.");
         }
         
-        // Mapeia os dados da API para o formato que a UI usará
         const mappedExchanges: Exchange[] = exchangeList.map(apiExchange => ({
-          id: apiExchange.id,
-          status: apiExchange.status,
-          requestDate: apiExchange.requestDate,
-          requester: apiExchange.requesterBook.owner,
-          provider: apiExchange.providerBook.owner,
-          requesterBook: { id: apiExchange.requesterBook.id, title: apiExchange.requesterBook.title },
-          providerBook: { id: apiExchange.providerBook.id, title: apiExchange.providerBook.title },
+          // Usando encadeamento opcional (?.) e fallbacks para TUDO.
+          id: apiExchange?.id || Math.random(), // Usar ID aleatório se o da API falhar
+          status: apiExchange?.status || 'UNKNOWN',
+          requestDate: apiExchange?.requestDate || new Date().toISOString(),
+          requester: apiExchange?.requester || { id: 0, name: 'Usuário Desconhecido' },
+          provider: apiExchange?.provider || { id: 0, name: 'Usuário Desconhecido' },
+          requesterBook: apiExchange?.requesterBook || { id: 0, title: 'Livro Desconhecido' },
+          providerBook: apiExchange?.providerBook || { id: 0, title: 'Livro Desconhecido' },
         }));
 
         setExchanges(mappedExchanges);
+
       } catch (err) {
         console.error("Falha ao buscar trocas:", err);
         setError("Não foi possível carregar os dados das propostas de troca.");

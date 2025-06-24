@@ -1,10 +1,10 @@
 import { useState, useMemo, useEffect } from 'react';
-import axios from 'axios';
-import { format } from 'date-fns';
+import axios from 'axios'; // 1. Importar o axios
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
 import Table from '@mui/material/Table';
+// ... (todos os outros imports do Material UI permanecem os mesmos)
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
@@ -18,264 +18,241 @@ import IconButton from '@mui/material/IconButton';
 import DialogTitle from '@mui/material/DialogTitle';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import Select, { type SelectChangeEvent } from '@mui/material/Select';
+import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
 import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
 import Tooltip from '@mui/material/Tooltip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
-import Divider from '@mui/material/Divider';
 
 // Icons
-import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
-import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
-// Tipos de dados para a página de gerenciamento de trocas
-type ExchangeStatus = 'REQUESTED' | 'ACCEPTED' | 'REFUSED' | 'WAITING_APPROVAL' | 'COMPLETED' | 'CANCELED';
-
-type Book = {
+// Tipo User (sem alterações)
+export type User = {
   id: number;
-  title: string;
+  name: string;
+  email: string;
+  uniCard: string;
+  course: string;
+  contact: string;
+  rating: number;
+  status: 'WAITING_APPROVAL' | 'ACTIVE';
+  createdAt: string;
 };
 
-type User = {
-    id: number;
-    name: string;
-}
+// Componente StatusBadge (sem alterações)
+const StatusBadge = ({ status }: { status: User['status'] }) => (
+  <Box
+    component="span"
+    sx={{
+      display: 'inline-block',
+      px: 1.5,
+      py: 0.5,
+      borderRadius: '12px',
+      color: 'white',
+      backgroundColor: status === 'ACTIVE' ? 'success.main' : 'warning.main',
+      fontSize: '0.75rem',
+      fontWeight: 'bold',
+    }}
+  >
+    {status === 'ACTIVE' ? 'Aprovado' : 'Pendente'}
+  </Box>
+);
 
-// Tipo para a troca, achatado para facilitar o uso na UI
-type Exchange = {
-  id: number;
-  status: ExchangeStatus;
-  requestDate: string;
-  requester: User;
-  provider: User;
-  requesterBook: Book;
-  providerBook: Book;
-};
 
-// Funções auxiliares para status
-const getFriendlyStatusName = (status: ExchangeStatus) => {
-    const names = {
-        REQUESTED: 'Requisitada',
-        ACCEPTED: 'Aceita',
-        REFUSED: 'Recusada',
-        WAITING_APPROVAL: 'Aguardando Aprovação',
-        COMPLETED: 'Concluída',
-        CANCELED: 'Cancelada',
-    };
-    return names[status] || status;
-};
-
-const getStatusColor = (status: ExchangeStatus) => {
-    const colors = {
-        REQUESTED: 'primary.main',
-        ACCEPTED: 'success.main',
-        COMPLETED: 'success.main',
-        REFUSED: 'error.main',
-        CANCELED: 'error.main',
-        WAITING_APPROVAL: 'warning.main',
-    };
-    return colors[status] || 'text.secondary';
-}
-
-export default function ExchangeManagementPage() {
-  const [exchanges, setExchanges] = useState<Exchange[]>([]);
+export default function UserModerationPage() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
 
-  // State para diálogos
-  const [deleteConfirmDialogOpen, setDeleteConfirmDialogOpen] = useState(false);
-  const [exchangeToDelete, setExchangeToDelete] = useState<Exchange | null>(null);
-  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
-  const [exchangeToShowInfo, setExchangeToShowInfo] = useState<Exchange | null>(null);
+  // States para os diálogos (sem alterações)
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [userToEdit, setUserToEdit] = useState<User | null>(null);
+  const [newStatus, setNewStatus] = useState<User['status'] | ''>('');
+  const [userInfoDialogOpen, setUserInfoDialogOpen] = useState(false);
+  const [userInfoDialogUser, setUserInfoDialogUser] = useState<User | null>(null);
 
-  // --- ESTE É O BLOCO TOTALMENTE CORRIGIDO ---
+  // 2. useEffect refatorado para usar axios.get
   useEffect(() => {
-    const fetchExchanges = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const response = await axios.get('/exchanges'); 
-        const exchangeList: any[] = response.data.items || response.data;
-
-        if (!Array.isArray(exchangeList)) {
-            throw new Error("Formato de dados inesperado recebido do servidor.");
-        }
-        
-        const mappedExchanges: Exchange[] = exchangeList.map(apiExchange => ({
-          id: apiExchange.id,
-          status: apiExchange.status,
-          requestDate: apiExchange.requestDate,
-          requester: apiExchange.requester || { id: 0, name: 'Usuário não encontrado' },
-          provider: apiExchange.provider || { id: 0, name: 'Usuário não encontrado' },
-          requesterBook: apiExchange.requesterBook || { id: 0, title: 'Livro não encontrado' },
-          providerBook: apiExchange.providerBook || { id: 0, title: 'Livro não encontrado' },
-        }));
-
-        setExchanges(mappedExchanges);
-
-      } catch (err) {
-        console.error("Falha ao buscar trocas:", err);
-        setError("Não foi possível carregar os dados das propostas de troca.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchExchanges();
-  }, []); // Array vazio garante que a busca ocorra apenas uma vez.
-
-  const filteredExchanges = useMemo(() => {
-    const q = searchTerm.trim().toLowerCase();
-    if (!q) return exchanges;
-    return exchanges.filter(
-      ({ requester, provider, requesterBook, providerBook }) =>
-        requester.name.toLowerCase().includes(q) ||
-        provider.name.toLowerCase().includes(q) ||
-        requesterBook.title.toLowerCase().includes(q) ||
-        providerBook.title.toLowerCase().includes(q)
-    );
-  }, [exchanges, searchTerm]);
-
-  const handleStatusChange = async (exchangeId: number, newStatus: ExchangeStatus) => {
-    const originalExchanges = [...exchanges];
-    
-    setExchanges(prevExchanges =>
-      prevExchanges.map(ex => (ex.id === exchangeId ? { ...ex, status: newStatus } : ex))
-    );
+  const fetchUsers = async () => {
+    setLoading(true);
+    setError(null);
+    console.log("Iniciando busca de usuários..."); // Log 1: Início da chamada
 
     try {
-      await axios.patch(`/exchanges/${exchangeId}`, { status: newStatus });
-    } catch (err) {
-      console.error(`Falha ao atualizar o status da troca ${exchangeId}:`, err);
-      setExchanges(originalExchanges);
-      alert('Não foi possível atualizar o status da proposta. Tente novamente.');
-    }
-  };
+      const response = await axios.get('/moderators/users');
+      
+      console.log("Resposta da API recebida:", response); // Log 2: Resposta completa
+      console.log("Dados da API (response.data):", response.data); // Log 3: Dados específicos
 
-  const confirmDelete = (exchange: Exchange) => {
-    setExchangeToDelete(exchange);
-    setDeleteConfirmDialogOpen(true);
-  };
+      console.log(response);
+      const items = response.data.data;
 
-  const handleDeleteExchange = async () => {
-    if (exchangeToDelete) {
-      try {
-        await axios.delete(`/exchanges/${exchangeToDelete.id}`);
-        setExchanges(prevExchanges => prevExchanges.filter(ex => ex.id !== exchangeToDelete.id));
-      } catch (err) {
-          console.error(`Falha ao excluir a troca ${exchangeToDelete.id}:`, err);
-          alert('Não foi possível excluir a proposta.');
-      } finally {
-        setDeleteConfirmDialogOpen(false);
-        setExchangeToDelete(null);
+      if (!items) {
+        console.warn("A resposta da API não contém a propriedade 'items'. Verifique a estrutura do JSON.");
+        setError("O formato da resposta da API é inválido.");
+        setUsers([]);
+      } else if (items.length === 0) {
+        console.log("A API retornou uma lista vazia de usuários.")
+        setUsers([]);
+      } else {
+        console.log(`Foram encontrados ${items.length} usuários.`);
+        setUsers(items);
       }
+
+    } catch (err) {
+      console.error("Ocorreu um erro ao buscar usuários:", err); // Log 5: Erro detalhado
+      
+      if (axios.isAxiosError(err)) {
+        if (err.response) {
+          // O servidor respondeu com um status de erro (4xx, 5xx)
+          setError(`Erro ${err.response.status}: ${err.response.data.message || 'Não foi possível carregar os dados.'}`);
+        } else if (err.request) {
+          // A requisição foi feita mas não houve resposta (ex: proxy errado, backend desligado)
+          setError("Não foi possível conectar à API. Verifique se o backend está rodando e o proxy está configurado.");
+        } else {
+          // Erro na configuração da requisição
+          setError("Erro ao configurar a requisição para a API.");
+        }
+      } else {
+        setError("Ocorreu um erro inesperado.");
+      }
+      
+    } finally {
+      console.log("Finalizando estado de loading."); // Log 6: Fim do processo
+      setLoading(false);
     }
   };
 
-  const handleOpenInfoDialog = (exchange: Exchange) => {
-    setExchangeToShowInfo(exchange);
-    setInfoDialogOpen(true);
+  fetchUsers();
+}, []);
+
+  const filteredUsers = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter(
+      ({ name, email, course }) =>
+        name.toLowerCase().includes(q) ||
+        email.toLowerCase().includes(q) ||
+        course.toLowerCase().includes(q)
+    );
+  }, [users, searchTerm]);
+
+  const handleClear = () => setSearchTerm('');
+
+  const openEditDialog = (user: User) => {
+    setUserToEdit(user);
+    setNewStatus(user.status);
+    setEditDialogOpen(true);
   };
+
+  const closeEditDialog = () => {
+    setEditDialogOpen(false);
+    setUserToEdit(null);
+    setNewStatus('');
+  };
+
+  const handleUpdateStatus = async () => {
+    if (!userToEdit || !newStatus) return;
+
+    try {
+      const url = `/users/${userToEdit.id}`;
+      
+      // O segundo argumento do axios.patch é o corpo (body) da requisição
+      await axios.patch(url, { status: newStatus });
+
+      // Atualiza o estado local para refletir a mudança imediatamente
+      setUsers(prevUsers =>
+        prevUsers.map(u => (u.id === userToEdit.id ? { ...u, status: newStatus } : u))
+      );
+      closeEditDialog();
+
+    } catch (err) {
+      console.error("Erro ao atualizar status:", err);
+      alert('Não foi possível atualizar o status. Tente novamente.');
+    }
+  };
+
+  // Funções para o diálogo de informações do usuário (sem alterações)
+  const openUserInfoDialog = (user: User) => {
+    setUserInfoDialogUser(user);
+    setUserInfoDialogOpen(true);
+  };
+  const closeUserInfoDialog = () => setUserInfoDialogOpen(false);
+  const handleExitedUserInfoDialog = () => setUserInfoDialogUser(null);
+
+
+  // --- Renderização do Componente (JSX sem alterações) ---
 
   if (loading) {
     return (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
-            <CircularProgress />
-            <Typography sx={{ ml: 2 }}>Carregando propostas...</Typography>
-        </Box>
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+        <CircularProgress />
+        <Typography sx={{ ml: 2 }}>Carregando usuários...</Typography>
+      </Box>
     );
   }
 
   if (error) {
-    return (
-        <Box sx={{ p: 4 }}>
-            <Alert severity="error">{error}</Alert>
-        </Box>
-    );
+    return <Alert severity="error" sx={{ m: 4 }}>{error}</Alert>;
   }
 
   return (
     <Box sx={{ p: { xs: 1, sm: 2, md: 4 } }}>
-      <TextField
-        label="Pesquisar por usuário ou livro"
-        variant="outlined"
-        fullWidth
-        value={searchTerm}
-        onChange={e => setSearchTerm(e.target.value)}
-        sx={{ mb: 2 }}
-        InputProps={{
-          startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-          endAdornment: (
-            <IconButton onClick={() => setSearchTerm('')} edge="end">
-              <ClearIcon />
-            </IconButton>
-          )
-        }}
-      />
-      
-      {filteredExchanges.length === 0 ? (
+
+      <Stack direction="row" spacing={2} sx={{ mb: 2 }}>
+        <TextField
+          label="Pesquisar por Nome, Email ou Curso"
+          variant="outlined"
+          fullWidth
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+        />
+        <Button variant="outlined" startIcon={<ClearIcon />} onClick={handleClear}>
+          Limpar
+        </Button>
+      </Stack>
+
+      {filteredUsers.length === 0 ? (
         <Typography align="center" variant="h6" sx={{ mt: 4 }}>
-          Nenhuma proposta de troca encontrada.
+          Nenhum usuário encontrado.
         </Typography>
       ) : (
-        <TableContainer component={Paper} sx={{ maxHeight: '70vh' }}>
+        <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
           <Table stickyHeader>
             <TableHead>
               <TableRow>
-                <TableCell>Solicitante (Oferece)</TableCell>
-                <TableCell>Provedor (Deseja)</TableCell>
-                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Data</TableCell>
-                <TableCell>Status</TableCell>
+                <TableCell>Nome</TableCell>
+                <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Email</TableCell>
+                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Curso</TableCell>
+                <TableCell align="center">Status</TableCell>
                 <TableCell align="center">Ações</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredExchanges.map(exchange => (
-                <TableRow key={exchange.id} hover>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight="bold">{exchange.requester.name}</Typography>
-                    <Typography variant="caption" color="text.secondary">{exchange.requesterBook.title}</Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" fontWeight="bold">{exchange.provider.name}</Typography>
-                    <Typography variant="caption" color="text.secondary">{exchange.providerBook.title}</Typography>
-                  </TableCell>
-                   <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                    {exchange.requestDate ? format(new Date(exchange.requestDate), 'dd/MM/yyyy HH:mm') : 'N/A'}
-                  </TableCell>
-                  <TableCell>
-                    <Tooltip title="Alterar Status">
-                      <FormControl fullWidth size="small">
-                        <Select
-                          value={exchange.status}
-                          onChange={(e: SelectChangeEvent<ExchangeStatus>) => handleStatusChange(exchange.id, e.target.value as ExchangeStatus)}
-                          sx={{ fontWeight: 'medium', color: getStatusColor(exchange.status) }}
-                        >
-                          <MenuItem value="WAITING_APPROVAL">Aguardando Aprovação</MenuItem>
-                          <MenuItem value="ACCEPTED">Aceita</MenuItem>
-                          <MenuItem value="REFUSED">Recusada</MenuItem>
-                          <MenuItem value="CANCELED">Cancelada</MenuItem>
-                           <MenuItem value="COMPLETED">Concluída</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </Tooltip>
+              {filteredUsers.map(user => (
+                <TableRow key={user.id} hover>
+                  <TableCell>{user.name}</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{user.email}</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{user.course}</TableCell>
+                  <TableCell align="center">
+                    <StatusBadge status={user.status} />
                   </TableCell>
                   <TableCell align="center">
                     <Stack direction="row" spacing={0.5} justifyContent="center">
-                      <Tooltip title="Ver Detalhes">
-                        <IconButton onClick={() => handleOpenInfoDialog(exchange)} size="small" color="info">
-                          <InfoOutlinedIcon />
+                      <Tooltip title="Alterar Status">
+                        <IconButton onClick={() => openEditDialog(user)} size="small" color="primary">
+                          <EditIcon />
                         </IconButton>
                       </Tooltip>
-                      <Tooltip title="Excluir Proposta">
-                        <IconButton onClick={() => confirmDelete(exchange)} size="small" color="error">
-                          <DeleteIcon />
+                      <Tooltip title="Ver Detalhes">
+                        <IconButton onClick={() => openUserInfoDialog(user)} size="small" color="info">
+                          <InfoOutlinedIcon />
                         </IconButton>
                       </Tooltip>
                     </Stack>
@@ -287,42 +264,61 @@ export default function ExchangeManagementPage() {
         </TableContainer>
       )}
 
-      {/* Diálogo de Confirmação de Exclusão */}
-      <Dialog open={deleteConfirmDialogOpen} onClose={() => setDeleteConfirmDialogOpen(false)}>
-        <DialogTitle>Confirmar Exclusão</DialogTitle>
+      {/* Edit Status Dialog (JSX sem alterações) */}
+      <Dialog open={editDialogOpen} onClose={closeEditDialog} fullWidth maxWidth="xs">
+        <DialogTitle>Alterar Status de Usuário</DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            Tem certeza que deseja excluir esta proposta de troca? Esta ação não pode ser desfeita.
-          </DialogContentText>
+          <Typography gutterBottom>
+            Alterando status para <strong>{userToEdit?.name}</strong>.
+          </Typography>
+          <FormControl fullWidth margin="dense" sx={{ mt: 2 }}>
+            <InputLabel id="status-select-label">Novo Status</InputLabel>
+            <Select
+              labelId="status-select-label"
+              value={newStatus}
+              label="Novo Status"
+              onChange={e => setNewStatus(e.target.value as User['status'])}
+            >
+              <MenuItem value="ACTIVE">Aprovado</MenuItem>
+              <MenuItem value="WAITING_APPROVAL">Pendente</MenuItem>
+            </Select>
+          </FormControl>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteConfirmDialogOpen(false)}>Cancelar</Button>
-          <Button onClick={handleDeleteExchange} color="error" variant="contained">
-            Excluir
-          </Button>
+          <Button onClick={closeEditDialog}>Cancelar</Button>
+          <Button variant="contained" onClick={handleUpdateStatus}>Salvar Alterações</Button>
         </DialogActions>
       </Dialog>
 
-      {/* Diálogo de Informações da Troca */}
-      <Dialog open={infoDialogOpen} onClose={() => setInfoDialogOpen(false)} fullWidth maxWidth="xs">
-        <DialogTitle>Detalhes da Proposta</DialogTitle>
+      {/* User Info Dialog (JSX sem alterações) */}
+      <Dialog
+        open={userInfoDialogOpen}
+        onClose={closeUserInfoDialog}
+        TransitionProps={{ onExited: handleExitedUserInfoDialog }}
+      >
+        <DialogTitle>Detalhes do Usuário</DialogTitle>
         <DialogContent dividers>
-          {exchangeToShowInfo && (
+          {userInfoDialogUser ? (
             <Stack spacing={1.5}>
-              <Typography><strong>ID da Troca:</strong> {exchangeToShowInfo.id}</Typography>
-              <Typography><strong>Status:</strong> <span style={{color: getStatusColor(exchangeToShowInfo.status)}}>{getFriendlyStatusName(exchangeToShowInfo.status)}</span></Typography>
-              <Typography><strong>Data da Solicitação:</strong> {exchangeToShowInfo.requestDate ? format(new Date(exchangeToShowInfo.requestDate), 'dd/MM/yyyy \'às\' HH:mm') : 'N/A'}</Typography>
-              <Divider>Solicitante</Divider>
-              <Typography><strong>Nome:</strong> {exchangeToShowInfo.requester.name}</Typography>
-              <Typography><strong>Oferece o livro:</strong> {exchangeToShowInfo.requesterBook.title}</Typography>
-              <Divider>Provedor</Divider>
-              <Typography><strong>Nome:</strong> {exchangeToShowInfo.provider.name}</Typography>
-              <Typography><strong>Possui o livro:</strong> {exchangeToShowInfo.providerBook.title}</Typography>
+              <Typography><strong>Nome:</strong> {userInfoDialogUser.name}</Typography>
+              <Typography><strong>Email:</strong> {userInfoDialogUser.email}</Typography>
+              <Typography><strong>Curso:</strong> {userInfoDialogUser.course}</Typography>
+              <Typography><strong>Matrícula (uniCard):</strong> {userInfoDialogUser.uniCard}</Typography>
+              <Typography><strong>Contato:</strong> {userInfoDialogUser.contact}</Typography>
+              <Typography><strong>Avaliação:</strong> {userInfoDialogUser.rating.toFixed(1)} / 5.0</Typography>
+              <Typography>
+                <strong>Status:</strong> <StatusBadge status={userInfoDialogUser.status} />
+              </Typography>
+               <Typography variant="caption" color="text.secondary">
+                Criado em: {new Date(userInfoDialogUser.createdAt).toLocaleDateString('pt-BR')}
+              </Typography>
             </Stack>
+          ) : (
+            <Typography>Carregando...</Typography>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setInfoDialogOpen(false)}>Fechar</Button>
+          <Button onClick={closeUserInfoDialog}>Fechar</Button>
         </DialogActions>
       </Dialog>
     </Box>
