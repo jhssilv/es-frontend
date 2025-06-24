@@ -30,8 +30,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { useAuth } from '../../components/functions/useAuth';
 
-// Opções para os campos de seleção
-const disciplines = ['Ciências Exatas', 'Ciências Humanas', 'Literatura', 'Artes', 'Outro'];
 // Atualizando as opções de condição do livro
 const conditions = [
   { value: 'LIKE_NEW', label: 'Como Novo' },
@@ -198,6 +196,7 @@ export default function MeusLivrosPage() {
                 <TableCell>Autor</TableCell>
                 <TableCell>Ano</TableCell>
                 <TableCell>Condição</TableCell>
+                <TableCell>Disciplina</TableCell>
                 <TableCell align="right">Ações</TableCell>
               </TableRow>
             </TableHead>
@@ -208,6 +207,7 @@ export default function MeusLivrosPage() {
                   <TableCell>{book.author}</TableCell>
                   <TableCell>{book.year}</TableCell>
                   <TableCell>{conditions.find(c => c.value === book.condition)?.label || book.condition}</TableCell>
+                  <TableCell>{book.discipline}</TableCell>
                   <TableCell align="right">
                     <IconButton size="small" color="primary" onClick={() => handleOpenEditBookDialog(book)}>
                       <EditIcon />
@@ -229,13 +229,7 @@ export default function MeusLivrosPage() {
           <TextField autoFocus name="title" margin="dense" label="Título" type="text" fullWidth variant="outlined" value={formData.title} onChange={handleInputChange} />
           <TextField name="author" margin="dense" label="Autor" type="text" fullWidth variant="outlined" value={formData.author} onChange={handleInputChange} />
           <TextField name="year" margin="dense" label="Ano de Publicação" type="number" fullWidth variant="outlined" value={formData.year} onChange={handleInputChange} />
-          
-          <FormControl fullWidth margin="dense">
-            <InputLabel>Disciplina</InputLabel>
-            <Select name="discipline" label="Disciplina" value={formData.discipline} onChange={handleSelectChange}>
-              {disciplines.map(d => <MenuItem key={d} value={d}>{d}</MenuItem>)}
-            </Select>
-          </FormControl>
+          <TextField name="discipline" margin="dense" label="Disciplina" type="text" fullWidth variant="outlined" value={formData.discipline} onChange={handleInputChange} />
           
           <FormControl fullWidth margin="dense">
             <InputLabel>Condição</InputLabel>

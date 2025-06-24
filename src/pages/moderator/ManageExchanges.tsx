@@ -33,6 +33,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import DeleteIcon from '@mui/icons-material/Delete';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
+
 // Tipos de dados para a página de gerenciamento de trocas
 type ExchangeStatus = 'REQUESTED' | 'ACCEPTED' | 'REFUSED' | 'WAITING_APPROVAL' | 'COMPLETED' | 'CANCELED';
 
@@ -55,6 +56,24 @@ type Exchange = {
   provider: User;
   requesterBook: Book;
   providerBook: Book;
+};
+
+// Tipo de dados como vem da API (com objetos aninhados)
+type ApiExchange = {
+  id: number;
+  status: ExchangeStatus;
+  requestDate: string;
+  completionDate: string;
+  requesterBook: {
+      id: number;
+      title: string;
+      owner: User;
+  };
+  providerBook: {
+      id: number;
+      title: string;
+      owner: User;
+  }
 };
 
 // Funções auxiliares para status
@@ -94,31 +113,31 @@ export default function ExchangeManagementPage() {
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
   const [exchangeToShowInfo, setExchangeToShowInfo] = useState<Exchange | null>(null);
 
-  // --- ESTE É O BLOCO TOTALMENTE CORRIGIDO ---
   useEffect(() => {
     const fetchExchanges = async () => {
       try {
         setLoading(true);
         setError(null);
+        // Assumindo um endpoint para moderadores buscarem todas as trocas
         const response = await axios.get('/exchanges'); 
-        const exchangeList: any[] = response.data.items || response.data;
+        const exchangeList: ApiExchange[] = response.data.items || response.data;
 
         if (!Array.isArray(exchangeList)) {
             throw new Error("Formato de dados inesperado recebido do servidor.");
         }
         
+        // Mapeia os dados da API para o formato que a UI usará
         const mappedExchanges: Exchange[] = exchangeList.map(apiExchange => ({
           id: apiExchange.id,
           status: apiExchange.status,
           requestDate: apiExchange.requestDate,
-          requester: apiExchange.requester || { id: 0, name: 'Usuário não encontrado' },
-          provider: apiExchange.provider || { id: 0, name: 'Usuário não encontrado' },
-          requesterBook: apiExchange.requesterBook || { id: 0, title: 'Livro não encontrado' },
-          providerBook: apiExchange.providerBook || { id: 0, title: 'Livro não encontrado' },
+          requester: apiExchange.requesterBook.owner,
+          provider: apiExchange.providerBook.owner,
+          requesterBook: { id: apiExchange.requesterBook.id, title: apiExchange.requesterBook.title },
+          providerBook: { id: apiExchange.providerBook.id, title: apiExchange.providerBook.title },
         }));
 
         setExchanges(mappedExchanges);
-
       } catch (err) {
         console.error("Falha ao buscar trocas:", err);
         setError("Não foi possível carregar os dados das propostas de troca.");
@@ -128,7 +147,7 @@ export default function ExchangeManagementPage() {
     };
 
     fetchExchanges();
-  }, []); // Array vazio garante que a busca ocorra apenas uma vez.
+  }, []);
 
   const filteredExchanges = useMemo(() => {
     const q = searchTerm.trim().toLowerCase();
@@ -145,14 +164,17 @@ export default function ExchangeManagementPage() {
   const handleStatusChange = async (exchangeId: number, newStatus: ExchangeStatus) => {
     const originalExchanges = [...exchanges];
     
+    // Atualização otimista da UI
     setExchanges(prevExchanges =>
       prevExchanges.map(ex => (ex.id === exchangeId ? { ...ex, status: newStatus } : ex))
     );
 
     try {
+      // Endpoint PATCH para atualizar a troca
       await axios.patch(`/exchanges/${exchangeId}`, { status: newStatus });
     } catch (err) {
       console.error(`Falha ao atualizar o status da troca ${exchangeId}:`, err);
+      // Reverte a mudança na UI em caso de erro
       setExchanges(originalExchanges);
       alert('Não foi possível atualizar o status da proposta. Tente novamente.');
     }
@@ -166,6 +188,7 @@ export default function ExchangeManagementPage() {
   const handleDeleteExchange = async () => {
     if (exchangeToDelete) {
       try {
+        // Endpoint para deletar a troca
         await axios.delete(`/exchanges/${exchangeToDelete.id}`);
         setExchanges(prevExchanges => prevExchanges.filter(ex => ex.id !== exchangeToDelete.id));
       } catch (err) {
@@ -247,7 +270,7 @@ export default function ExchangeManagementPage() {
                     <Typography variant="caption" color="text.secondary">{exchange.providerBook.title}</Typography>
                   </TableCell>
                    <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>
-                    {exchange.requestDate ? format(new Date(exchange.requestDate), 'dd/MM/yyyy HH:mm') : 'N/A'}
+                    {format(new Date(exchange.requestDate), 'dd/MM/yyyy HH:mm')}
                   </TableCell>
                   <TableCell>
                     <Tooltip title="Alterar Status">
@@ -311,7 +334,7 @@ export default function ExchangeManagementPage() {
             <Stack spacing={1.5}>
               <Typography><strong>ID da Troca:</strong> {exchangeToShowInfo.id}</Typography>
               <Typography><strong>Status:</strong> <span style={{color: getStatusColor(exchangeToShowInfo.status)}}>{getFriendlyStatusName(exchangeToShowInfo.status)}</span></Typography>
-              <Typography><strong>Data da Solicitação:</strong> {exchangeToShowInfo.requestDate ? format(new Date(exchangeToShowInfo.requestDate), 'dd/MM/yyyy \'às\' HH:mm') : 'N/A'}</Typography>
+              <Typography><strong>Data da Solicitação:</strong> {format(new Date(exchangeToShowInfo.requestDate), 'dd/MM/yyyy \'às\' HH:mm')}</Typography>
               <Divider>Solicitante</Divider>
               <Typography><strong>Nome:</strong> {exchangeToShowInfo.requester.name}</Typography>
               <Typography><strong>Oferece o livro:</strong> {exchangeToShowInfo.requesterBook.title}</Typography>

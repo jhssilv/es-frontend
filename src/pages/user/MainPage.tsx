@@ -26,7 +26,6 @@ import MenuIcon     from '@mui/icons-material/Menu';
 import SearchIcon   from '@mui/icons-material/Search';
 import BookIcon     from '@mui/icons-material/Book';
 import AccountIcon  from '@mui/icons-material/AccountCircle';
-import ContactsIcon from '@mui/icons-material/Contacts';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon   from '@mui/icons-material/Logout';
 import SwapCallsIcon from '@mui/icons-material/SwapCalls';
@@ -72,9 +71,9 @@ const MainPage: React.FC = () => {
   const menuItems: MenuItemData[] = [
     { text: 'Pesquisar',    icon: <SearchIcon /> },
     { text: 'Meus Livros',  icon: <BookIcon /> },
-    { text: 'Minhas Trocas', icon: <SwapCallsIcon /> }, // Adicionado novo item de menu
+    { text: 'Minhas Trocas', icon: <SwapCallsIcon /> },
     { text: 'Conta',        icon: <AccountIcon /> },
-    { text: 'Contatos',     icon: <ContactsIcon /> },
+    // { text: 'Contatos',     icon: <ContactsIcon /> },
     { text: 'Configurações',icon: <SettingsIcon /> },
     { text: 'Logout',       icon: <LogoutIcon />, effect: () => setLogoutModalOpen(true) },
   ];
@@ -179,7 +178,7 @@ const MainPage: React.FC = () => {
             variant="temporary"
             open={mobileOpen}
             onClose={handleDrawerToggle}
-            ModalProps={{ keepMounted: true }} // melhora performance em mobile
+            ModalProps={{ keepMounted: true }}
             sx={{
               '& .MuiDrawer-paper': {
                 width: drawerWidth,

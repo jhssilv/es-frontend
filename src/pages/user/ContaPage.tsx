@@ -176,9 +176,6 @@ export default function ContaPage() {
   return (
     <Box sx={{ p: 3 }}>
       <Stack spacing={4}>
-        <div>
-          <Typography variant="h4">Minha Conta</Typography>
-        </div>
 
         <Box sx={{ mb: 2 }}>
         {errorMessage && (

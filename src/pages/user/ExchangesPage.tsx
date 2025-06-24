@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -29,19 +30,50 @@ import InfoIcon from '@mui/icons-material/Info';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import ThumbUpIcon from '@mui/icons-material/ThumbUp';
 import AutorenewIcon from '@mui/icons-material/Autorenew';
-
-import { useAuth } from '../../components/functions/useAuth'; 
-
+import { useAuth } from '../../components/functions/useAuth';
 
 type ExchangeStatus = 'REQUESTED' | 'ACCEPTED' | 'REFUSED' | 'WAITING_APPROVAL' | 'COMPLETED' | 'CANCELED';
 
+interface ApiUser {
+  id: number
+  name: string
+  email: string
+  password: string
+  uniCard: string
+  course: string
+  contact: string
+  rating: number
+  status: string
+} 
+
+interface ApiBook {
+    id: number;
+    title: string;
+    author: string;
+    year: number;
+    condition: string;
+    ownerId: number; 
+  }
+
+interface ApiExchange {
+    id: number;
+    providerId: number;
+    requesterId: number;
+    status: ExchangeStatus;
+    requestDate: string;
+    requesterBook?: ApiBook;
+    providerBook?: ApiBook;
+    owner: ApiUser;
+}
+
 interface Exchange {
   id: number;
-  offeringUser: string;
+  providerId: number;
   bookOffered: string;
   bookRequested: string;
   status: ExchangeStatus;
   offerDate: string;
+  name: string;
 }
 
 export default function ExchangesPage() {
@@ -63,50 +95,47 @@ export default function ExchangesPage() {
 
   useEffect(() => {
     const fetchExchanges = async () => {
+      if (!user?.id) {
+        setError("Usuário não identificado. Não é possível carregar as trocas.");
+        setIsLoading(false);
+        return;
+      }
+      
       setIsLoading(true);
       setError(null);
+
       try {
-        const response = await fetch(`/exchanges/user/${user?.id}`);
-        const responseText = await response.text(); // Sempre ler como texto primeiro
+        const response = await axios.get(`/exchanges/user/${user?.id}`);
+        const rawExchanges: ApiExchange[] = response.data.items;
 
-        if (!response.ok) {
-          // Se a resposta não for bem-sucedida, o corpo pode ter detalhes do erro
-          throw new Error(responseText || 'Falha ao buscar as ofertas de troca. Tente novamente.');
-        }
-
-        if (!responseText) {
-          // Resposta bem-sucedida, mas com corpo vazio
-          setOffers([]);
-          return;
-        }
-
-        let responseData;
-        try {
-          // CORREÇÃO: Tentar fazer o parse dentro de um bloco try-catch
-          responseData = JSON.parse(responseText);
-        } catch (e) {
-          console.error("Falha ao analisar a resposta JSON da API:", e);
-          console.error("Resposta recebida:", responseText);
-          throw new Error("Formato de resposta inesperado do servidor.");
+        if (!Array.isArray(rawExchanges)) {
+          throw new Error('Formato de dados da API inesperado.');
         }
         
-        const exchangesList = Array.isArray(responseData) ? responseData : responseData.Exchanges;
+        const formattedOffers = rawExchanges.map((item: ApiExchange) => {
+            return {
+              id: item.id,
+              providerId: item.providerId,
+              status: item.status,
+              offerDate: item.requestDate,
+              bookRequested: item.requesterBook?.title || 'Livro não encontrado',
+              bookOffered: item.providerBook?.title || 'Livro não encontrado',
+              name: item.owner?.name ?? 'Usuário Indisponível',
+            };
+          });
 
-        if (!Array.isArray(exchangesList)) {
-          console.error("Estrutura de dados inesperada:", responseData);
-          throw new Error('O formato dos dados recebidos da API é inválido.');
-        }
-        
-        setOffers(exchangesList);
+        setOffers(formattedOffers);
       } catch (err: any) {
-        setError(err.message || 'Ocorreu um erro inesperado.');
+        const errorMessage = err.response?.data?.message || err.message || 'Ocorreu um erro inesperado.';
+        setError(errorMessage);
         console.error(err);
       } finally {
         setIsLoading(false);
       }
     };
+
     fetchExchanges();
-  }, []);
+  }, [user?.id]);
 
   const handleOpenInfoDialog = (offer: Exchange) => {
     setInfoDialogOffer(offer);
@@ -132,54 +161,52 @@ export default function ExchangesPage() {
   };
 
   const handleAcceptOffer = async () => {
-    if (!confirmDialogOffer) return;
-    setIsSubmitting(true);
-    try {
-      const response = await fetch(`/exchanges/${confirmDialogOffer.id}/accept`, { method: 'PATCH' });
-      if (!response.ok) throw new Error('Falha ao aceitar a oferta.');
-      
-      // CORREÇÃO: Lida com respostas JSON ou vazias
-      const responseText = await response.text();
-      if (responseText) {
-        const updatedOffer = JSON.parse(responseText) as Exchange;
-        setOffers(prev => prev.map(o => o.id === updatedOffer.id ? updatedOffer : o));
-      } else {
-        // Se a API retornar corpo vazio, atualiza o estado manualmente
-        setOffers(prev => prev.map(o => 
-          o.id === confirmDialogOffer.id ? { ...o, status: 'ACCEPTED' } : o
-        ));
-      }
-
+    if (!confirmDialogOffer || !Number.isFinite(confirmDialogOffer.id)) {
+      setError("Erro: ID da oferta inválido. Não foi possível completar a ação.");
+      setIsSubmitting(false);
       handleCloseConfirmDialog();
-    } catch (err) {
-      console.error(err); // TODO: Adicionar feedback de erro para o usuário (ex: Snackbar)
+      return;
+    }
+    setIsSubmitting(true);
+    setError(null);
+    try {
+       await axios.patch(`/exchanges/${confirmDialogOffer.id}/accept`, { userId: user?.id });
+      
+      setOffers(prev => prev.map(o => 
+        o.id === confirmDialogOffer.id ? { ...o, status: 'ACCEPTED' } : o
+      ));
+      
+      handleCloseConfirmDialog();
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Falha ao aceitar a oferta.';
+      setError(errorMessage);
+      console.error(err);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleRejectOffer = async () => {
-    if (!confirmDialogOffer) return;
+    if (!confirmDialogOffer || !Number.isFinite(confirmDialogOffer.id)) {
+      setError("Erro: ID da oferta inválido. Não foi possível completar a ação.");
+      setIsSubmitting(false);
+      handleCloseConfirmDialog();
+      return;
+    }
     setIsSubmitting(true);
+    setError(null);
     try {
-      const response = await fetch(`/exchanges/${confirmDialogOffer.id}/reject`, { method: 'PATCH' });
-      if (!response.ok) throw new Error('Falha ao recusar a oferta.');
-      
-      // CORREÇÃO: Lida com respostas JSON ou vazias
-      const responseText = await response.text();
-      if (responseText) {
-          const updatedOffer = JSON.parse(responseText) as Exchange;
-          setOffers(prev => prev.map(o => o.id === updatedOffer.id ? updatedOffer : o));
-      } else {
-          // Se a API retornar corpo vazio, atualiza o estado manualmente
-          setOffers(prev => prev.map(o => 
-            o.id === confirmDialogOffer.id ? { ...o, status: 'REFUSED' } : o
-          ));
-      }
+      await axios.patch(`/exchanges/${confirmDialogOffer.id}/reject`, { userId: user?.id });
+
+      setOffers(prev => prev.map(o => 
+        o.id === confirmDialogOffer.id ? { ...o, status: 'REFUSED' } : o
+      ));
 
       handleCloseConfirmDialog();
-    } catch (err) {
-      console.error(err); // TODO: Adicionar feedback de erro para o usuário (ex: Snackbar)
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || 'Falha ao recusar a oferta.';
+      setError(errorMessage);
+      console.error(err);
     } finally {
       setIsSubmitting(false);
     }
@@ -233,76 +260,77 @@ export default function ExchangesPage() {
     setConfirmDialogOffer(offer);
   };
   const handleCloseActionsMenu = () => setAnchorElActionsMenu(null);
-
-  const isActionable = (status: ExchangeStatus) => {
-    return status === 'REQUESTED' || status === 'WAITING_APPROVAL';
-  };
+  
+  // A função isActionable não é mais necessária, a lógica será feita diretamente no JSX.
 
   if (isLoading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', p: 4 }}><CircularProgress /></Box>;
   }
-  if (error) {
-    return <Alert severity="error" sx={{ m: 2 }}>{error}</Alert>;
-  }
-
+  
   return (
     <Box>
-      {offers.length === 0 ? (
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+      {offers.length === 0 && !error ? (
         <Paper sx={{ p: 3, textAlign: 'center' }}>
           <Typography>Você não tem nenhuma oferta de troca no momento.</Typography>
         </Paper>
       ) : (
-        <TableContainer component={Paper}>
+        !error && <TableContainer component={Paper}>
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell>Seu Livro Solicitado</TableCell>
+                <TableCell>Livro Solicitado</TableCell>
                 <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Livro Ofertado</TableCell>
-                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Usuário Ofertante</TableCell>
+                <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>Usuário</TableCell>
                 <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>Data</TableCell>
-                <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>Status</TableCell>
+                <TableCell>Status</TableCell>
                 <TableCell align="center">Ações</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {offers.map(offer => (
-                <TableRow key={offer.id}>
+              {offers.map((offer, index) => (
+                <TableRow key={`${offer.id}-${index}`}>
                   <TableCell>{offer.bookRequested}</TableCell>
                   <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{offer.bookOffered}</TableCell>
-                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{offer.offeringUser}</TableCell>
+                  <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{offer.name}</TableCell>
                   <TableCell sx={{ display: { xs: 'none', lg: 'table-cell' } }}>{new Date(offer.offerDate).toLocaleDateString()}</TableCell>
-                  <TableCell sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{getStatusDisplay(offer.status)}</TableCell>
+                  <TableCell>{getStatusDisplay(offer.status)}</TableCell>
                   <TableCell align="center">
-                    <Stack direction="row" spacing={0.5} justifyContent="center">
+                    {Number(user?.id) == offer.providerId && offer.status === 'REQUESTED' ? (
+                      <Stack direction="row" spacing={0.5} justifyContent="center">
+                        <Tooltip title="Ver Detalhes">
+                            <IconButton size="small" color="info" onClick={() => handleOpenInfoDialog(offer)}>
+                                <InfoIcon />
+                            </IconButton>
+                        </Tooltip>
+                        
+                        {/* Ações para telas pequenas (Menu) */}
+                        <Tooltip title="Mais Ações">
+                          <IconButton
+                            size="small"
+                            onClick={(e) => handleOpenActionsMenu(e, offer)}
+                            sx={{ display: { xs: 'flex', sm: 'none' } }}
+                          >
+                            <MoreVertIcon />
+                          </IconButton>
+                        </Tooltip>
+
+                        {/* Ações para telas maiores (Botões) */}
+                        <Button variant="outlined" size="small" color="success" startIcon={<CheckCircleIcon />} onClick={() => handleOpenConfirmDialog(offer, 'accept')} sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
+                          Aceitar
+                        </Button>
+                        <Button variant="outlined" size="small" color="error" startIcon={<CancelIcon />} onClick={() => handleOpenConfirmDialog(offer, 'reject')} sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
+                          Recusar
+                        </Button>
+                      </Stack>
+                    ) : (
+                      // Caso contrário, mostramos apenas o ícone de detalhes
                       <Tooltip title="Ver Detalhes">
                         <IconButton size="small" color="info" onClick={() => handleOpenInfoDialog(offer)}>
                           <InfoIcon />
                         </IconButton>
                       </Tooltip>
-                      {isActionable(offer.status) ? (
-                        <>
-                          <Tooltip title="Mais Ações">
-                            <IconButton
-                              size="small"
-                              onClick={(e) => handleOpenActionsMenu(e, offer)}
-                              sx={{ display: { xs: 'flex', sm: 'none' } }}
-                            >
-                              <MoreVertIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Button variant="outlined" size="small" color="success" startIcon={<CheckCircleIcon />} onClick={() => handleOpenConfirmDialog(offer, 'accept')} sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
-                            Aceitar
-                          </Button>
-                          <Button variant="outlined" size="small" color="error" startIcon={<CancelIcon />} onClick={() => handleOpenConfirmDialog(offer, 'reject')} sx={{ display: { xs: 'none', sm: 'inline-flex' } }}>
-                            Recusar
-                          </Button>
-                        </>
-                      ) : (
-                        <Typography variant="body2" sx={{ display: { xs: 'flex', sm: 'none' }, justifyContent: 'center', alignItems: 'center', minHeight: '34px' }}>
-                          {getStatusDisplay(offer.status)}
-                        </Typography>
-                      )}
-                    </Stack>
+                    )}
                   </TableCell>
                 </TableRow>
               ))}
@@ -311,8 +339,9 @@ export default function ExchangesPage() {
         </TableContainer>
       )}
 
+      {/* MUDANÇA 4: Atualizar a condição para mostrar os itens do menu */}
       <Menu anchorEl={anchorElActionsMenu} open={openActionsMenu} onClose={handleCloseActionsMenu}>
-        {confirmDialogOffer && isActionable(confirmDialogOffer.status) && [
+        {confirmDialogOffer && Number(user?.id) == confirmDialogOffer.providerId && confirmDialogOffer.status === 'REQUESTED' && [
           <MenuItem key="accept" onClick={() => handleOpenConfirmDialog(confirmDialogOffer, 'accept')}>
             <CheckCircleIcon sx={{ mr: 1 }} color="success" /> Aceitar
           </MenuItem>,
@@ -327,9 +356,11 @@ export default function ExchangesPage() {
         <DialogContent dividers>
           {infoDialogOffer ? (
             <Stack spacing={2} sx={{ py: 1 }}>
-              <Typography><strong>De:</strong> {infoDialogOffer.offeringUser}</Typography>
+              {/* LINHA ADICIONADA */}
+              <Typography><strong>Usuário:</strong> {infoDialogOffer.name}</Typography> 
+              
               <Typography><strong>Livro Ofertado:</strong> {infoDialogOffer.bookOffered}</Typography>
-              <Typography><strong>Seu Livro Solicitado:</strong> {infoDialogOffer.bookRequested}</Typography>
+              <Typography><strong>Livro Solicitado:</strong> {infoDialogOffer.bookRequested}</Typography>
               <Typography><strong>Data da Oferta:</strong> {new Date(infoDialogOffer.offerDate).toLocaleString()}</Typography>
               <Stack direction="row" spacing={1} alignItems="center">
                 <Typography><strong>Status:</strong></Typography>
@@ -341,14 +372,14 @@ export default function ExchangesPage() {
         <DialogActions>
           <Button onClick={handleCloseInfoDialog} color="primary">Fechar</Button>
         </DialogActions>
-      </Dialog>
+    </Dialog>
 
       <Dialog open={isConfirmDialogOpen} onClose={handleCloseConfirmDialog} fullWidth maxWidth="xs" TransitionProps={{ onExited: handleExitedConfirmDialog }}>
         <DialogTitle>{confirmDialogAction === 'accept' ? 'Aceitar Oferta' : 'Recusar Oferta'}</DialogTitle>
         <DialogContent dividers>
           {confirmDialogOffer && (
             <Typography>
-              Tem certeza que deseja {confirmDialogAction === 'accept' ? 'aceitar' : 'recusar'} a oferta de <strong>{confirmDialogOffer.offeringUser}</strong>?
+              Tem certeza que deseja {confirmDialogAction === 'accept' ? 'aceitar' : 'recusar'} a oferta de troca?
             </Typography>
           )}
         </DialogContent>

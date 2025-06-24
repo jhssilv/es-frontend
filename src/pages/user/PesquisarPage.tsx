@@ -85,7 +85,7 @@ export default function PesquisarPage() {
     const fetchMyBooks = async () => {
         setLoadingMyBooks(true);
         try {
-            const { data } = await axios.get(`/books/${user?.id}`);
+            const { data } = await axios.get(`/books/user/${user?.id}`);
             console.log(data);
             setMyBooks(data.items || []);
         } catch (e) {
@@ -142,36 +142,49 @@ export default function PesquisarPage() {
     setMySelectedBooks(newChecked);
   };
   
-  const handleProposeExchange = async () => {
-      if (!selectedBook || mySelectedBooks.length === 0) {
-          setExchangeFeedback({type: 'error', message: 'Você precisa selecionar pelo menos um dos seus livros para a troca.'});
-          return;
-      }
-      
-      const payload = {
-          matchId: selectedBook.ownerId,
-          requesterBooksIds: mySelectedBooks,
-          providerBooksIds: [selectedBook.id],
-          completionDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      };
-      
-      try {
-          const { data } = await axios.post('/exchanges', payload);
-          console.log('Troca criada com sucesso:', data);
-          setExchangeFeedback({type: 'success', message: `Proposta de troca por "${selectedBook.title}" enviada com sucesso!`});
-          setTimeout(handleCloseModal, 2000);
-      } catch (e) {
-          console.error("Erro ao criar troca:", e);
-          setExchangeFeedback({type: 'error', message: 'Ocorreu um erro ao propor a troca.'});
-      }
-  };
+   
+const handleProposeExchange = async () => {
+    if (!user) {
+        setExchangeFeedback({type: 'error', message: 'Sessão inválida. Por favor, faça login novamente.'});
+        return;
+    }
+
+    if (!selectedBook || mySelectedBooks.length === 0) {
+        setExchangeFeedback({ type: 'error', message: 'Você precisa selecionar um livro para pedir e ao menos um para oferecer.' });
+        return;
+    }
+
+    // --- INÍCIO DA CORREÇÃO ---
+    // Removemos o .split('T')[0] para enviar a data completa no formato ISO 8601
+    const completionDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    // --- FIM DA CORREÇÃO ---
+
+    const exchangePromises = mySelectedBooks.map(currentRequesterBookId => {
+        const payload = {
+            requesterId: user.id,
+            providerId: selectedBook.ownerId,
+            requesterBookId: currentRequesterBookId,
+            providerBookId: selectedBook.id,
+            completionDate: completionDate,
+        };
+        return axios.post('/exchanges', payload);
+    });
+
+    try {
+        await Promise.all(exchangePromises);
+        
+        setExchangeFeedback({ type: 'success', message: `Propostas de troca por "${selectedBook.title}" enviadas com sucesso!` });
+        
+        setTimeout(handleCloseModal, 2000);
+
+    } catch (e) {
+        console.error("Erro ao criar troca(s):", e);
+        setExchangeFeedback({ type: 'error', message: 'Ocorreu um erro ao propor a troca.' });
+    }
+};
 
   return (
-    <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
-      <Typography variant="h4" component="h1" gutterBottom>
-        Encontre Livros para Trocar
-      </Typography>
-      
+    <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>      
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mb: 2 }}>
         <TextField
           label="Pesquisar por título ou autor"
